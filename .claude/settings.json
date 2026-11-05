@@ -1,0 +1,50 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(**)",
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Edit(TASKS.md)",
+      "Edit(docs/**)",
+      "Edit(README.md)",
+      "Edit(CHANGELOG.md)",
+      "Edit(.gitignore)",
+      "Bash(pnpm *)",
+      "Bash(npm view *)",
+      "Edit(frontend/src/**)",
+      "Edit(frontend/tests/**)",
+      "Edit(frontend/public/**)",
+      "Edit(package.json)",
+      "Edit(tsconfig.json)",
+      "Edit(pnpm-workspace.yaml)",
+      "Edit(frontend/package.json)",
+      "Edit(frontend/tsconfig.json)",
+      "Edit(frontend/vite.config.ts)",
+      "Edit(frontend/vitest.config.ts)",
+      "Edit(eslint.config.js)",
+      "Bash(uv *)",
+      "Bash(docker compose *)",
+      "Edit(backend/**)",
+      "Edit(evals/**)",
+      "Edit(frontend/**)",
+      "Edit(docker-compose.yml)",
+      "Edit(.env.example)"
+    ],
+    "deny": [
+      "Edit(AGENTS.md)",
+      "Edit(.dev-kit.json)",
+      "Bash(rm -rf *)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git reset --hard*)",
+      "Bash(pnpm add *)",
+      "Bash(pnpm install *--no-frozen-lockfile*)",
+      "Bash(npm install *)",
+      "Bash(npx *)",
+      "Bash(uv add *)",
+      "Bash(uv pip install *)"
+    ]
+  }
+}

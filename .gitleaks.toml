@@ -1,0 +1,8 @@
+# gitleaks: CI runs `gitleaks git` over the whole history on every push.
+[extend]
+useDefault = true
+
+# Allowlist only test fixtures, each with the reason it is safe:
+# [allowlist]
+# description = "..."
+# paths = ['''tests/fixtures/example\.pem$''']

@@ -1,0 +1,30 @@
+{
+  "version": "0.2.0",
+  "modules": [
+    "ts"
+  ],
+  "vars": {
+    "DESCRIPTION": "Code-aware RAG that answers questions about a codebase with exact file and line citations, and proves its retrieval quality with an eval suite in CI.",
+    "NAME": "RepoLens",
+    "REPO": "o-kangal/RepoLens",
+    "TS_DIR": "frontend"
+  },
+  "project": {
+    "permissions": {
+      "allow": [
+        "Bash(uv *)",
+        "Bash(docker compose *)",
+        "Edit(backend/**)",
+        "Edit(evals/**)",
+        "Edit(frontend/**)",
+        "Edit(docker-compose.yml)",
+        "Edit(.env.example)"
+      ],
+      "deny": [
+        "Bash(uv add *)",
+        "Bash(uv pip install *)"
+      ]
+    },
+    "actions": []
+  }
+}
