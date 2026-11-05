@@ -22,3 +22,14 @@ updates:
       npm-minor-and-patch:
         update-types: [minor, patch]
     open-pull-requests-limit: 5
+
+  - package-ecosystem: uv
+    directory: /backend
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      python-minor-and-patch:
+        update-types: [minor, patch]
+    open-pull-requests-limit: 5

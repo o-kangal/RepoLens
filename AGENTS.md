@@ -84,6 +84,7 @@ The commands above start working once Tasks 1–3 have created the tooling.
 
 - The pnpm release-age policy rejects versions published in the last 24 hours. Pick an older version; never add `minimumReleaseAgeExclude` entries. If a stale lockfile is rejected, regenerate it.
 - Generate `pnpm-lock.yaml` with pnpm 12 itself. A global pnpm 10 that switches to the pinned version omits `packageManagerDependencies`, and CI then fails on `--frozen-lockfile` while local checks pass.
+- `backend/` uses `exclude-newer = "1 day"` for the same release-age rule, so pin a direct dependency to a version older than that.
 
 ---
 

@@ -52,7 +52,7 @@ pnpm audit
 ---
 
 ### Task 2: Backend Scaffold and Python CI
-- **Status:** ⏳ Pending
+- **Status:** ✅ Completed (2026-11-05)
 - **Type:** Setup
 - **Human Step:** If the CI job uses a new third-party action, the owner lists it under `project.actions` in `.dev-kit.json` and applies the allowed-actions command.
 - **Read-Only Context Files:** `AGENTS.md`, `docs/plans/RepoLens_Plan.md` (§2, §4, §12)

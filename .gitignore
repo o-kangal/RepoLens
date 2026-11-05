@@ -1,6 +1,13 @@
 # Dependencies
 node_modules/
 
+# Python
+.venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
 # Build output
 dist/
 *.tsbuildinfo
