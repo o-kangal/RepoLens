@@ -14,7 +14,7 @@
 ---
 
 ## Open Decisions (resolve before the task named in each item)
-1. **Embedding model and vector size (before Task 4):** OpenAI `text-embedding-3-small` or Voyage `voyage-code-3`? This fixes the first migration's `VECTOR(n)`. Comparing both later (§15 E6 stretch goal) needs one column per dimension, one table per model, or a shared output dimension.
+1. **Embedding model and vector size (before Task 4):** ✅ Resolved (2026-11-05): Voyage `voyage-code-3` with `VECTOR(1024)`, replacing the 1536 in the §5 schema. The §15 E6 stretch goal can compare `text-embedding-3-small` in the same column through its `dimensions=1024` option, once stored vectors record which model produced them.
 2. **Reranker (before Task 20):** Cohere Rerank or a local cross-encoder such as `bge-reranker`?
 3. **Eval target repositories (before Task 22):** which public TypeScript repository and which public Python repository, at which pinned commit SHAs?
 4. **Tracing (before Task 30):** self-hosted Langfuse or OpenTelemetry?
@@ -99,7 +99,7 @@ docker compose exec db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CRE
 ---
 
 ### Task 4: Data Model and Migrations
-- **Status:** ⏳ Pending
+- **Status:** ✅ Completed (2026-11-05)
 - **Type:** Feature
 - **Human Step:** None
 - **Read-Only Context Files:** `AGENTS.md`, `docs/plans/RepoLens_Plan.md` (§5)
