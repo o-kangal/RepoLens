@@ -1,0 +1,22 @@
+{
+  "name": "repolens",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@12.16.1",
+  "scripts": {
+    "dev": "pnpm --filter frontend run dev",
+    "typecheck": "pnpm --filter frontend run typecheck",
+    "lint": "eslint .",
+    "test": "pnpm --filter frontend run test",
+    "build": "pnpm --filter frontend run build"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.14.0",
+    "globals": "17.14.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.1"
+  }
+}

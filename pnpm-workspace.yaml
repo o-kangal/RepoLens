@@ -1,0 +1,7 @@
+packages:
+  - frontend
+# Never add release-age exclusions automatically; pick a version old enough instead.
+minimumReleaseAgeStrict: true
+overrides:
+  # GHSA-g3hv-75wg-m249 is patched only in 11.0.1+, while ESLint 10 still asks for ^10.
+  minimatch: 11.0.4
