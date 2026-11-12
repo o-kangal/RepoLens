@@ -9,3 +9,5 @@ class Settings(BaseSettings):
 
     debug: bool = False
     database_url: SecretStr | None = None
+    embedding_model: str = "voyage-code-4"
+    voyage_api_key: SecretStr | None = None

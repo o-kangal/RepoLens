@@ -14,7 +14,7 @@
 ---
 
 ## Open Decisions (resolve before the task named in each item)
-1. **Embedding model and vector size (before Task 4):** ✅ Resolved (2026-11-05): Voyage `voyage-code-3` with `VECTOR(1024)`, replacing the 1536 in the §5 schema. The §15 E6 stretch goal can compare `text-embedding-3-small` in the same column through its `dimensions=1024` option, once stored vectors record which model produced them.
+1. **Embedding model and vector size (before Task 4):** ✅ Resolved (2026-11-05): Voyage `voyage-code-3` with `VECTOR(1024)`, replacing the 1536 in the §5 schema. Revised (2026-11-12, Task 7): `voyage-code-4`, since Voyage now lists `voyage-code-3` under older models; it keeps the 1024 default dimension, so the schema is unchanged. The model is a setting, and vectors from different models are never mixed in one index. The §15 E6 stretch goal can compare `text-embedding-3-small` in the same column through its `dimensions=1024` option, once stored vectors record which model produced them.
 2. **Reranker (before Task 20):** Cohere Rerank or a local cross-encoder such as `bge-reranker`?
 3. **Eval target repositories (before Task 22):** which public TypeScript repository and which public Python repository, at which pinned commit SHAs?
 4. **Tracing (before Task 30):** self-hosted Langfuse or OpenTelemetry?
@@ -163,7 +163,7 @@ uv --directory backend run pytest tests/ingest/test_naive.py tests/ingest/test_m
 ---
 
 ### Task 7: Embedder Interface and First Adapter
-- **Status:** ⏳ Pending
+- **Status:** ✅ Completed (2026-11-12)
 - **Type:** Feature
 - **Human Step:** None
 - **Read-Only Context Files:** `AGENTS.md`, `docs/plans/RepoLens_Plan.md` (§2, §5)
