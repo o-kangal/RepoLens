@@ -20,6 +20,7 @@
 4. **Tracing (before Task 30):** self-hosted Langfuse or OpenTelemetry?
 5. **Demo hosting (before Task 38):** where do the backend, database and frontend of the public demo run, and which public repository does it index?
 6. **`tokcost` manifest support (before Task 39):** build it once the analyzer exists, or drop it from v1?
+7. **Token counter (before Task 6):** ✅ Resolved (2026-11-12): a dependency-free heuristic in `ingest/tokens.py`, scaled toward tiktoken counts, so chunking and unit tests need no tokenizer download. Once the Task 25 runner exists, a stretch experiment can compare naive chunking under this counter and tiktoken `o200k_base`, with the counter as the only changed variable.
 
 ---
 
@@ -142,7 +143,7 @@ uv --directory backend run pytest tests/ingest/test_walker.py
 ---
 
 ### Task 6: Naive and Markdown Chunkers
-- **Status:** ⏳ Pending
+- **Status:** ✅ Completed (2026-11-12)
 - **Type:** Feature
 - **Human Step:** None
 - **Read-Only Context Files:** `AGENTS.md`, `docs/plans/RepoLens_Plan.md` (§5, §6.1, §6.3)
