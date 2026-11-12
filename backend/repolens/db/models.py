@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import datetime
+from enum import StrEnum
 
 from pgvector.sqlalchemy import VECTOR
 from sqlalchemy import (
@@ -26,13 +27,30 @@ class Base(DeclarativeBase):
     pass
 
 
+class RepoStatus(StrEnum):
+    RUNNING = "running"
+    DONE = "done"
+    FAILED = "failed"
+
+
 class Repo(Base):
     __tablename__ = "repos"
-    __table_args__ = (UniqueConstraint("url", "commit_sha", name="uq_repos_url_commit_sha"),)
+    __table_args__ = (
+        UniqueConstraint("url", "commit_sha", name="uq_repos_url_commit_sha"),
+        CheckConstraint("status IN ('running', 'done', 'failed')", name="ck_repos_status"),
+        CheckConstraint(
+            "status <> 'done' OR commit_sha IS NOT NULL", name="ck_repos_done_has_commit"
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     url: Mapped[str] = mapped_column(Text)
-    commit_sha: Mapped[str] = mapped_column(Text)
+    ref: Mapped[str | None] = mapped_column(Text)
+    """The requested branch or tag; None means the default branch."""
+    commit_sha: Mapped[str | None] = mapped_column(Text)
+    """Set once the clone is known; required when the status is done."""
+    status: Mapped[str] = mapped_column(Text)
+    error: Mapped[str | None] = mapped_column(Text)
     indexed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

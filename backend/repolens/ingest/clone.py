@@ -64,6 +64,12 @@ def parse_github_url(url: str) -> GitHubRepository:
     return GitHubRepository(owner=match["owner"], name=match["name"])
 
 
+def validate_ref(ref: str) -> None:
+    """Accept branch and tag names only: nothing git could read as an option or a range."""
+    if _REF.fullmatch(ref) is None or ".." in ref:
+        raise InvalidRepositoryError(f"invalid ref: {ref!r}")
+
+
 def clone_github(
     repository: GitHubRepository, ref: str | None, *, max_bytes: int = MAX_CLONE_BYTES
 ) -> AbstractAsyncContextManager[Checkout]:
@@ -83,8 +89,8 @@ async def shallow_clone(
     """
     if urlsplit(source).scheme not in _SCHEMES:
         raise InvalidRepositoryError("only https and file sources can be cloned")
-    if ref is not None and (_REF.fullmatch(ref) is None or ".." in ref):
-        raise InvalidRepositoryError(f"invalid ref: {ref!r}")
+    if ref is not None:
+        validate_ref(ref)
     with tempfile.TemporaryDirectory(prefix="repolens-clone-") as scratch:
         root = Path(scratch) / "repo"
         await _clone(source, root, ref=ref, max_bytes=max_bytes, timeout=timeout)

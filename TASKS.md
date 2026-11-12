@@ -203,7 +203,7 @@ uv --directory backend run pytest tests/ingest/test_clone.py tests/ingest/test_p
 ---
 
 ### Task 9: Repository API
-- **Status:** ⏳ Pending
+- **Status:** ✅ Completed (2026-11-12)
 - **Type:** Feature
 - **Human Step:** None
 - **Read-Only Context Files:** `AGENTS.md`, `docs/plans/RepoLens_Plan.md` (§7 API)

@@ -27,7 +27,7 @@ def make_chunk(repo: Repo, **overrides: object) -> Chunk:
 
 
 def add_repo(session: Session) -> Repo:
-    repo = Repo(id=uuid.uuid4(), url="https://github.com/acme/app", commit_sha="abc")
+    repo = Repo(id=uuid.uuid4(), url="https://github.com/acme/app", commit_sha="abc", status="done")
     session.add(repo)
     session.flush()
     return repo
@@ -144,3 +144,24 @@ def test_embedding_and_its_model_are_stored_together(
         session.add(make_chunk(add_repo(session), **values))
         with pytest.raises(IntegrityError, match="ck_chunks_embedding_model"):
             session.flush()
+
+
+def test_unknown_repo_status_is_rejected(engine: Engine) -> None:
+    with Session(engine) as session:
+        session.add(Repo(url="https://github.com/acme/app", status="queued"))
+        with pytest.raises(IntegrityError, match="ck_repos_status"):
+            session.flush()
+
+
+def test_done_repo_needs_a_commit(engine: Engine) -> None:
+    with Session(engine) as session:
+        session.add(Repo(url="https://github.com/acme/app", status="done"))
+        with pytest.raises(IntegrityError, match="ck_repos_done_has_commit"):
+            session.flush()
+
+
+def test_running_repos_may_share_a_url_before_their_commit_is_known(engine: Engine) -> None:
+    with Session(engine) as session:
+        for _ in range(2):
+            session.add(Repo(url="https://github.com/acme/app", status="running"))
+        session.flush()
