@@ -243,7 +243,7 @@ uv --directory backend run pytest tests/retrieval/test_vector.py tests/api/test_
 ---
 
 ### Task 11: LLM Provider Adapters
-- **Status:** ⏳ Pending
+- **Status:** ✅ Completed (2026-11-12)
 - **Type:** Feature
 - **Human Step:** None
 - **Read-Only Context Files:** `AGENTS.md`, `docs/plans/RepoLens_Plan.md` (§2)

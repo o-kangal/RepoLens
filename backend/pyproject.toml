@@ -6,8 +6,10 @@ license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
     "alembic==1.20.1",
+    "anthropic==2.8.0",
     "fastapi==0.162.0",
     "httpx2==2.16.0",
+    "openai==3.49.0",
     "pathspec==1.1.1",
     "pgvector==0.5.1",
     "psycopg[binary]==3.3.8",
