@@ -247,43 +247,45 @@ def _status_error(provider: str, status: int) -> LLMError:
     return LLMError(f"{provider} returned HTTP {status}", status=status)
 
 
-def create_llm(settings: Settings, http: httpx2.AsyncClient) -> LLM | None:
-    """Build the configured LLM, or None when its credentials are not set."""
+def configured_models(settings: Settings) -> list[str]:
+    """The models a request may choose, the default first."""
+    default = settings.llm_model
+    if default is None and settings.llm_provider == "anthropic":
+        default = DEFAULT_ANTHROPIC_MODEL
+    if default is None:
+        raise ValueError(f"REPOLENS_LLM_MODEL is required for the {settings.llm_provider} provider")
+    return list(dict.fromkeys([default, *settings.llm_models]))
+
+
+def create_llms(settings: Settings, http: httpx2.AsyncClient) -> dict[str, LLM]:
+    """One LLM per configured model, the default first; empty when credentials are not set."""
+    models = configured_models(settings)
     match settings.llm_provider:
         case "anthropic":
             if settings.anthropic_api_key is None:
-                return None
-            return AnthropicLLM(
-                client=anthropic.AsyncAnthropic(
-                    api_key=settings.anthropic_api_key.get_secret_value(), http_client=http
-                ),
-                model=settings.llm_model or DEFAULT_ANTHROPIC_MODEL,
-                refusal_fallback=settings.llm_refusal_fallback,
+                return {}
+            claude = anthropic.AsyncAnthropic(
+                api_key=settings.anthropic_api_key.get_secret_value(), http_client=http
             )
+            return {
+                model: AnthropicLLM(
+                    client=claude, model=model, refusal_fallback=settings.llm_refusal_fallback
+                )
+                for model in models
+            }
         case "openai":
             if settings.openai_api_key is None:
-                return None
-            return OpenAILLM(
-                client=openai.AsyncOpenAI(
-                    api_key=settings.openai_api_key.get_secret_value(), http_client=http
-                ),
-                model=_required_model(settings),
+                return {}
+            client = openai.AsyncOpenAI(
+                api_key=settings.openai_api_key.get_secret_value(), http_client=http
             )
         case "azure_openai":
             if settings.azure_openai_api_key is None or settings.azure_openai_endpoint is None:
-                return None
-            return OpenAILLM(
-                client=openai.AsyncAzureOpenAI(
-                    azure_endpoint=settings.azure_openai_endpoint,
-                    api_key=settings.azure_openai_api_key.get_secret_value(),
-                    api_version=settings.azure_openai_api_version,
-                    http_client=http,
-                ),
-                model=_required_model(settings),
+                return {}
+            client = openai.AsyncAzureOpenAI(
+                azure_endpoint=settings.azure_openai_endpoint,
+                api_key=settings.azure_openai_api_key.get_secret_value(),
+                api_version=settings.azure_openai_api_version,
+                http_client=http,
             )
-
-
-def _required_model(settings: Settings) -> str:
-    if settings.llm_model is None:
-        raise ValueError(f"REPOLENS_LLM_MODEL is required for the {settings.llm_provider} provider")
-    return settings.llm_model
+    return {model: OpenAILLM(client=client, model=model) for model in models}

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from repolens.ingest.clone import clone_github
 from repolens.ingest.pipeline import Clone
 from repolens.providers.embeddings import Embedder
+from repolens.providers.llm import LLM
 
 
 @dataclass(frozen=True, slots=True)
@@ -15,6 +16,8 @@ class Services:
     session_factory: sessionmaker[Session]
     embedder: Embedder | None
     """None when no embedding provider is configured."""
+    llms: dict[str, LLM]
+    """One LLM per model a query may choose, the default first; empty without credentials."""
 
 
 def get_services(request: Request) -> Services:
@@ -33,6 +36,10 @@ def get_embedder(request: Request) -> Embedder:
             status.HTTP_503_SERVICE_UNAVAILABLE, "no embedding provider is configured"
         )
     return embedder
+
+
+def get_llms(request: Request) -> dict[str, LLM]:
+    return get_services(request).llms
 
 
 def get_clone() -> Clone:

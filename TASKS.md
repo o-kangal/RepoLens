@@ -283,7 +283,7 @@ uv --directory backend run pytest tests/generation
 ---
 
 ### Task 13: Streaming Query Endpoint
-- **Status:** ⏳ Pending
+- **Status:** ✅ Completed (2026-11-12)
 - **Type:** Feature
 - **Human Step:** None
 - **Read-Only Context Files:** `AGENTS.md`, `SPEC.md`, `docs/plans/RepoLens_Plan.md` (§7)

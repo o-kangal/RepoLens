@@ -10,12 +10,14 @@ from fastapi import FastAPI
 
 from repolens.api.deps import Services
 from repolens.api.health import router as health_router
+from repolens.api.query import router as query_router
 from repolens.api.repos import router as repos_router
 from repolens.api.search import router as search_router
 from repolens.config import Settings
 from repolens.db.session import create_db_engine, create_session_factory
 from repolens.ingest.pipeline import fail_interrupted_jobs
 from repolens.providers.embeddings import VoyageEmbedder
+from repolens.providers.llm import create_llms
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +42,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 else None
             )
             application.state.services = Services(
-                session_factory=session_factory, embedder=embedder
+                session_factory=session_factory,
+                embedder=embedder,
+                llms=create_llms(resolved, http),
             )
             yield
         engine.dispose()
@@ -49,6 +53,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(health_router)
     application.include_router(repos_router)
     application.include_router(search_router)
+    application.include_router(query_router)
     return application
 
 

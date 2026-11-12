@@ -87,6 +87,7 @@ The commands above start working once Tasks 1–3 have created the tooling.
 - `backend/` uses `exclude-newer = "1 day"` for the same release-age rule, so pin a direct dependency to a version older than that.
 - The Postgres 18 image keeps data under a versioned path, so the Compose volume mounts `/var/lib/postgresql`, not `/var/lib/postgresql/data`.
 - pgvector's HNSW index stops after `hnsw.ef_search` candidates and applies `WHERE` filters afterwards, so a filtered vector query can return fewer than k rows, or none. Run filtered vector searches with `SET LOCAL hnsw.iterative_scan = strict_order` (pgvector ≥ 0.8).
+- In a FastAPI SSE endpoint (`response_class=EventSourceResponse`), an `HTTPException` raised inside the generator, even before the first `yield`, does not become an HTTP error response. Validate requests in dependencies, and report failures after the stream opens as `error` events.
 - `pytest` needs the database (`docker compose up -d --wait db`). DB tests use scratch databases and fail, rather than skip, when `REPOLENS_DATABASE_URL` is missing.
 
 ---

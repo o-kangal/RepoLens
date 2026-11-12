@@ -21,7 +21,8 @@ from repolens.providers.llm import (
     StopReason,
     TextDelta,
     TokenUsage,
-    create_llm,
+    configured_models,
+    create_llms,
 )
 
 pytestmark = pytest.mark.anyio
@@ -384,22 +385,39 @@ async def test_scripted_llm_can_fail_after_partial_output() -> None:
 
 async def test_anthropic_is_the_default_provider_and_model() -> None:
     async with httpx2.AsyncClient() as client:
-        llm = create_llm(Settings(anthropic_api_key=SecretStr("k"), llm_model=None), client)
+        llms = create_llms(Settings(anthropic_api_key=SecretStr("k"), llm_model=None), client)
 
-    assert isinstance(llm, AnthropicLLM)
-    assert llm.model == DEFAULT_ANTHROPIC_MODEL
+    assert list(llms) == [DEFAULT_ANTHROPIC_MODEL]
+    assert isinstance(llms[DEFAULT_ANTHROPIC_MODEL], AnthropicLLM)
 
 
-async def test_model_name_comes_from_configuration() -> None:
+async def test_models_come_from_configuration_with_the_default_first() -> None:
+    settings = Settings(
+        anthropic_api_key=SecretStr("k"),
+        llm_model="claude-sonnet-5-5",
+        llm_models=["claude-haiku-5-5", "claude-sonnet-5-5"],
+    )
+
     async with httpx2.AsyncClient() as client:
-        anthropic_llm = create_llm(
-            Settings(anthropic_api_key=SecretStr("k"), llm_model="claude-sonnet-5-5"), client
-        )
-        openai_llm = create_llm(
+        llms = create_llms(settings, client)
+
+    assert list(llms) == ["claude-sonnet-5-5", "claude-haiku-5-5"]
+    assert [llm.model for llm in llms.values()] == ["claude-sonnet-5-5", "claude-haiku-5-5"]
+
+
+def test_further_models_are_read_comma_separated(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("REPOLENS_LLM_MODELS", " claude-haiku-5-5, ,claude-sonnet-5-5 ")
+
+    assert Settings().llm_models == ["claude-haiku-5-5", "claude-sonnet-5-5"]
+
+
+async def test_openai_and_azure_use_the_configured_model_or_deployment() -> None:
+    async with httpx2.AsyncClient() as client:
+        openai_llms = create_llms(
             Settings(llm_provider="openai", openai_api_key=SecretStr("k"), llm_model="gpt-x"),
             client,
         )
-        azure_llm = create_llm(
+        azure_llms = create_llms(
             Settings(
                 llm_provider="azure_openai",
                 azure_openai_endpoint="https://example.openai.azure.com",
@@ -410,13 +428,10 @@ async def test_model_name_comes_from_configuration() -> None:
             client,
         )
 
-    assert [llm.model if llm else None for llm in (anthropic_llm, openai_llm, azure_llm)] == [
-        "claude-sonnet-5-5",
-        "gpt-x",
-        "answers-deployment",
-    ]
-    assert isinstance(openai_llm, OpenAILLM)
-    assert isinstance(azure_llm, OpenAILLM)
+    assert list(openai_llms) == ["gpt-x"]
+    assert isinstance(openai_llms["gpt-x"], OpenAILLM)
+    assert list(azure_llms) == ["answers-deployment"]
+    assert isinstance(azure_llms["answers-deployment"], OpenAILLM)
 
 
 @pytest.mark.parametrize(
@@ -432,14 +447,13 @@ async def test_model_name_comes_from_configuration() -> None:
         ),
     ],
 )
-async def test_missing_credentials_mean_no_llm(settings: Settings) -> None:
+async def test_missing_credentials_mean_no_llms(settings: Settings) -> None:
     async with httpx2.AsyncClient() as client:
-        assert create_llm(settings, client) is None
+        assert create_llms(settings, client) == {}
 
 
-async def test_openai_needs_a_configured_model() -> None:
+def test_openai_needs_a_configured_model() -> None:
     settings = Settings(llm_provider="openai", openai_api_key=SecretStr("k"), llm_model=None)
 
-    async with httpx2.AsyncClient() as client:
-        with pytest.raises(ValueError, match="REPOLENS_LLM_MODEL"):
-            create_llm(settings, client)
+    with pytest.raises(ValueError, match="REPOLENS_LLM_MODEL"):
+        configured_models(settings)
