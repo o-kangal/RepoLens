@@ -122,7 +122,7 @@ uv --directory backend run pytest tests/db
 ---
 
 ### Task 5: File Walker
-- **Status:** ⏳ Pending
+- **Status:** ✅ Completed (2026-11-12)
 - **Type:** Feature
 - **Human Step:** None
 - **Read-Only Context Files:** `AGENTS.md`, `docs/plans/RepoLens_Plan.md` (§3, §12)
