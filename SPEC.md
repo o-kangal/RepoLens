@@ -12,7 +12,7 @@ Code-aware RAG that answers questions about a codebase with exact file and line 
 - **Success:** grounded, cited answers, plus a published eval report that compares naive and AST chunking with everything else held constant. The full Definition of Done is in `docs/plans/RepoLens_Plan.md` §1.
 
 ## 2. Scope
-- **In scope:** indexing public GitHub repositories (TypeScript, JavaScript, Python, Markdown); naive, AST and Markdown chunking; hybrid retrieval with an optional reranker; cited streaming answers; an agentic mode for multi-hop questions; an MCP server; a React UI; an eval suite with a CI gate; a read-only, rate-limited public demo.
+- **In scope:** indexing public GitHub repositories (TypeScript, JavaScript, Python, Markdown); naive, AST and Markdown chunking; hybrid retrieval with an optional reranker; cited streaming answers; an agentic mode for multi-hop questions; an MCP server; a React UI; an eval suite with a CI gate; a static, read-only public demo built from recorded runs.
 - **Out of scope (for now):** multi-tenant SaaS, auth and billing; fine-tuning models; other languages; private repositories.
 
 ## 3. Users & Key Flows
@@ -55,7 +55,7 @@ Code-aware RAG that answers questions about a codebase with exact file and line 
 ## 5. Non-Functional Requirements
 - **Performance:** `docker compose up` gives a working app on a sample repository in under 5 minutes. Latency p50/p95 and cost per query are measured and reported.
 - **Accessibility:** WCAG 2.2 AA; keyboard navigable; the chat log uses `role="log"` and `aria-live="polite"`.
-- **Security & Privacy:** secrets only through the environment; read-only file access inside the repository root; repository content treated as data. The public demo has per-IP rate limiting, a maximum question length, a provider spend cap and CORS restricted to the frontend origin.
+- **Security & Privacy:** secrets only through the environment; read-only file access inside the repository root; repository content treated as data. The public demo is static: it has no backend, holds no API keys and makes no provider calls, so it has no running cost. The app itself runs locally with the user's own keys.
 - **Supported platforms / browsers:** see Open Questions.
 
 ## 6. Open Questions

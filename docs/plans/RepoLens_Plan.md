@@ -25,7 +25,7 @@
 - [ ] MCP server usable from Claude Code.
 - [ ] CI runs unit tests + eval gate on every PR.
 - [ ] README with architecture diagram, eval results table, demo GIF.
-- [ ] Deployed demo (read-only, indexed on a public repo, rate-limited).
+- [ ] Static demo at `repolens.okangal.com` (read-only, recorded runs on a pinned public repo, no backend or API costs).
 
 ---
 
@@ -292,7 +292,7 @@ Add a "Use with Claude Code" section to the README with the exact config snippet
 - **Repo ingestion:** allow only `https://github.com/...` URLs; shallow clone into a temp dir; size and file-count limits; skip binaries and files > 1 MB; **never execute repo code**.
 - **Path traversal:** `read_file_range` resolves paths inside the repo root only.
 - **Prompt injection:** repo content is wrapped as data and the system prompt says so; the agent's tools are **read-only**.
-- **Public demo:** rate limiting per IP, max question length, a spend cap on the provider dashboard, CORS restricted to the frontend origin.
+- **Public demo:** static files only, with no backend, no API keys and no provider calls; the app itself runs locally with the user's own keys.
 - Dependency scanning (Dependabot) + `pip-audit` / `pnpm audit` in CI.
 
 ---

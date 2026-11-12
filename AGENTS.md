@@ -4,7 +4,7 @@
 
 ## System & Architecture Overview
 - **Product:** RepoLens — Code-aware RAG that answers questions about a codebase with exact file and line citations, and proves its retrieval quality with an eval suite in CI.
-- **Stack:** Python 3.12+, FastAPI, Pydantic v2 and `uv` (backend, evals); PostgreSQL with pgvector and `tsvector`; tree-sitter; React 19, strict TypeScript, Vite, TanStack Query and Tailwind (frontend); pytest, Vitest, Testing Library and Playwright; Docker Compose and GitHub Actions. Hosting is an Open Decision in `TASKS.md`. Exact versions live in the manifests and lockfiles.
+- **Stack:** Python 3.12+, FastAPI, Pydantic v2 and `uv` (backend, evals); PostgreSQL with pgvector and `tsvector`; tree-sitter; React 19, strict TypeScript, Vite, TanStack Query and Tailwind (frontend); pytest, Vitest, Testing Library and Playwright; Docker Compose and GitHub Actions. The public demo is static, served by Cloudflare Pages at `repolens.okangal.com` (Open Decision 5 in `TASKS.md`). Exact versions live in the manifests and lockfiles.
 - **Plan:** `docs/plans/RepoLens_Plan.md` is the full design; `TASKS.md` is the order of work.
 - **Primary Language Invariant:** All source code, interfaces, comments, commit messages and error messages are written in **English (en-US)**.
 

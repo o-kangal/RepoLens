@@ -18,7 +18,7 @@
 2. **Reranker (before Task 20):** Cohere Rerank or a local cross-encoder such as `bge-reranker`?
 3. **Eval target repositories (before Task 22):** which public TypeScript repository and which public Python repository, at which pinned commit SHAs?
 4. **Tracing (before Task 30):** self-hosted Langfuse or OpenTelemetry?
-5. **Demo hosting (before Task 38):** where do the backend, database and frontend of the public demo run, and which public repository does it index?
+5. **Demo hosting (before Task 38):** ✅ Resolved (2026-11-12): a static, read-only demo at `repolens.okangal.com`, served by Cloudflare Pages, where `okangal.com` already runs. It has no backend and no API keys, so it has no hosting or usage cost; it replays runs recorded locally against a pinned public repository, chosen at Task 35. The app runs locally with the user's own keys, and the owner pays only for one-off local runs (evals, demo data).
 6. **`tokcost` manifest support (before Task 39):** build it once the analyzer exists, or drop it from v1?
 7. **Token counter (before Task 6):** ✅ Resolved (2026-11-12): a dependency-free heuristic in `ingest/tokens.py`, scaled toward tiktoken counts, so chunking and unit tests need no tokenizer download. Once the Task 25 runner exists, a stretch experiment can compare naive chunking under this counter and tiktoken `o200k_base`, with the counter as the only changed variable.
 
@@ -288,12 +288,13 @@ uv --directory backend run pytest tests/generation
 - **Human Step:** None
 - **Read-Only Context Files:** `AGENTS.md`, `SPEC.md`, `docs/plans/RepoLens_Plan.md` (§7)
 - **Target Files (Create/Modify):**
-  - `backend/repolens/api/query.py`, `backend/repolens/generation/pipeline.py`, `backend/repolens/main.py`
+  - `backend/repolens/api/query.py`, `backend/repolens/generation/pipeline.py`, `backend/repolens/main.py`, `backend/repolens/config.py`, `.env.example`
   - `backend/tests/api/test_query.py`
 - **Step-by-Step Instructions:**
-  1. `POST /api/query` takes `{repo_id, question, strategy, rerank}` and streams over SSE: retrieve, build context, generate.
-  2. Finish the stream with the validated citations, and send a typed error event on failure.
-  3. Test the event order and error events with the fake embedder and fake LLM.
+  1. `POST /api/query` takes `{repo_id, question, strategy, rerank, model}` and streams over SSE: retrieve, build context, generate.
+  2. `model` is optional and must be one of the models allowed in configuration; `GET /api/models` lists them and the default.
+  3. Finish the stream with the validated citations, and send a typed error event on failure.
+  4. Test the event order, error events and model validation with the fake embedder and fake LLM.
 - **Verification:**
 ```bash
 docker compose up -d --wait db
@@ -313,7 +314,8 @@ uv --directory backend run pytest tests/api/test_query.py
 - **Step-by-Step Instructions:**
   1. Write a typed API client that parses the SSE stream, with no `any`.
   2. Build the chat with a streaming answer, using `role="log"` and `aria-live="polite"`, and with loading, empty and error states.
-  3. Test streaming, error handling and the ARIA roles with a mocked stream.
+  3. Add a model selector filled from `GET /api/models`.
+  4. Test streaming, error handling, the model selector and the ARIA roles with a mocked stream.
 - **Verification:**
 ```bash
 pnpm run typecheck
@@ -722,22 +724,25 @@ pnpm --filter frontend exec playwright test
 
 ---
 
-### Task 35: Public Demo Hardening
+### Task 35: Static Demo Export
 - **Status:** ⏳ Pending
-- **Type:** Security
-- **Human Step:** None
-- **Read-Only Context Files:** `AGENTS.md`, `SECURITY.md`, `docs/plans/RepoLens_Plan.md` (§12)
+- **Type:** Feature
+- **Human Step:** The owner picks the pinned public repository and the demo questions, and runs the export locally with their own keys.
+- **Read-Only Context Files:** `AGENTS.md`, `SPEC.md`, `docs/plans/RepoLens_Plan.md` (§11, §12)
 - **Target Files (Create/Modify):**
-  - `backend/repolens/api/limits.py`, `backend/repolens/main.py`, `backend/repolens/config.py`, `backend/tests/api/test_limits.py`, `.env.example`
+  - `backend/repolens/demo/export.py`, `backend/tests/demo/test_export.py`
+  - `frontend/src/api/**`, `frontend/tests/api/**`, `frontend/public/demo/**`
 - **Step-by-Step Instructions:**
-  1. Add per-IP rate limiting, a maximum question length, and CORS restricted to the frontend origin.
-  2. Add a read-only demo mode that disables `POST /api/repos`.
-  3. Test each limit, including the rejection responses.
+  1. Add an export command that runs a fixed question list against a locally indexed repository at a pinned commit, for each strategy, and writes the answers, citations, retrieved chunks with scores and usage, plus the cited source files, as static JSON under `frontend/public/demo/`.
+  2. Add a static data mode to the frontend API client, selected at build time, that serves those files through the same interface; it disables indexing and new questions and says so in the UI.
+  3. Test the export with the fakes, and the static client against a fixture export.
+  4. **Human step:** the owner chooses the repository and questions and runs the export.
 - **Verification:**
 ```bash
-uv --directory backend run pytest tests/api/test_limits.py
-uv --directory backend run pip-audit
-pnpm audit
+uv --directory backend run pytest tests/demo/test_export.py
+pnpm run typecheck
+pnpm run test
+pnpm run build
 ```
 
 ---
@@ -780,20 +785,20 @@ curl --fail --silent http://localhost:8000/api/health
 
 ---
 
-### Task 38: Deploy Demo and Definition of Done
+### Task 38: Deploy Static Demo and Definition of Done
 - **Status:** ⏳ Pending
 - **Type:** Deploy
-- **Human Step:** The owner runs the external deployment setup.
+- **Human Step:** The owner creates the Cloudflare Pages project and the `repolens.okangal.com` custom domain.
 - **Read-Only Context Files:** `AGENTS.md`, `SECURITY.md`, `docs/plans/RepoLens_Plan.md` (§1, §12)
 - **Target Files (Create/Modify):**
   - `docs/deploy.md`, `README.md`
 - **Step-by-Step Instructions:**
-  1. Write the deployment guide for the host chosen in Open Decision 5, with the exact commands for the owner to run, including a provider spend cap.
-  2. **Human step:** the owner runs the external setup. Index the chosen public repository in read-only mode.
+  1. Write the deployment guide for Cloudflare Pages (Open Decision 5): the build command, output directory and environment for the static demo build, and the custom domain. Check that the Cloudflare build image supports the pinned pnpm; if it does not, document a build that does.
+  2. **Human step:** the owner creates the Pages project from the GitHub repository and adds `repolens.okangal.com`.
   3. Add the live link to the README and walk through the Definition of Done in §1, reporting any item still open.
 - **Verification:**
 ```bash
-curl --fail --silent <demo-url>/api/health
+curl --fail --silent --head https://repolens.okangal.com/
 ```
 
 ---
@@ -842,7 +847,7 @@ Task 13 ──► Task 30 (Tracing)
 Task 15 ──► Task 31 (Source viewer) ──► Task 34 (Quality + E2E)
 Tasks 15, 30 ──► Task 32 (Debug drawer) ──► Task 34
 Tasks 15, 18 ──► Task 33 (Compare) ──► Task 34
-Task 16 ──► Task 35 (Hardening)
+Tasks 31, 32, 33 ──► Task 35 (Static demo)
 Tasks 26, 27, 29, 34, 35 ──► Task 36 (Architecture + ADRs) ──► Task 37 (README) ──► Task 38 (Deploy)
 
 Optional
