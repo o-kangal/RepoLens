@@ -263,7 +263,7 @@ uv --directory backend run pytest tests/providers/test_llm.py
 ---
 
 ### Task 12: Context Builder, Prompt and Citation Parser
-- **Status:** ⏳ Pending
+- **Status:** ✅ Completed (2026-11-12)
 - **Type:** Feature
 - **Human Step:** None
 - **Read-Only Context Files:** `AGENTS.md`, `SPEC.md`, `docs/plans/RepoLens_Plan.md` (§7, §12)
