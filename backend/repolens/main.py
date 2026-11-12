@@ -11,6 +11,7 @@ from fastapi import FastAPI
 from repolens.api.deps import Services
 from repolens.api.health import router as health_router
 from repolens.api.repos import router as repos_router
+from repolens.api.search import router as search_router
 from repolens.config import Settings
 from repolens.db.session import create_db_engine, create_session_factory
 from repolens.ingest.pipeline import fail_interrupted_jobs
@@ -47,6 +48,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application = FastAPI(title="RepoLens", debug=resolved.debug, lifespan=lifespan)
     application.include_router(health_router)
     application.include_router(repos_router)
+    application.include_router(search_router)
     return application
 
 
