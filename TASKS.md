@@ -182,7 +182,7 @@ uv --directory backend run pytest tests/providers/test_embeddings.py
 ---
 
 ### Task 8: Safe Clone and Ingestion Pipeline
-- **Status:** ⏳ Pending
+- **Status:** ✅ Completed (2026-11-12)
 - **Type:** Feature
 - **Human Step:** None
 - **Read-Only Context Files:** `AGENTS.md`, `SPEC.md`, `docs/plans/RepoLens_Plan.md` (§3, §5, §12)

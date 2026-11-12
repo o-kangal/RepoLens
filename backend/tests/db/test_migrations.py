@@ -1,53 +1,15 @@
 """Migration and schema tests. Each test runs in its own scratch database."""
 
 import uuid
-from collections.abc import Iterator
-from pathlib import Path
 
 import pytest
 from alembic import command
-from alembic.config import Config
-from dotenv import load_dotenv
 from sqlalchemy import Engine, create_engine, delete, inspect, select, text
-from sqlalchemy.engine import make_url
 from sqlalchemy.exc import DataError, IntegrityError, StatementError
 from sqlalchemy.orm import Session
 
-from repolens.config import Settings
 from repolens.db.models import EMBEDDING_DIMENSION, Chunk, Repo
-from repolens.db.session import database_url
-
-BACKEND = Path(__file__).resolve().parents[2]
-
-
-def alembic_config(url: str) -> Config:
-    config = Config(BACKEND / "alembic.ini")
-    config.attributes["url"] = url
-    return config
-
-
-@pytest.fixture
-def scratch_url() -> Iterator[str]:
-    load_dotenv(BACKEND.parent / ".env")
-    server = make_url(database_url(Settings()))
-    name = f"repolens_test_{uuid.uuid4().hex}"
-    admin = create_engine(server, isolation_level="AUTOCOMMIT")
-    with admin.connect() as connection:
-        connection.execute(text(f'CREATE DATABASE "{name}"'))
-    try:
-        yield server.set(database=name).render_as_string(hide_password=False)
-    finally:
-        with admin.connect() as connection:
-            connection.execute(text(f'DROP DATABASE "{name}" WITH (FORCE)'))
-        admin.dispose()
-
-
-@pytest.fixture
-def engine(scratch_url: str) -> Iterator[Engine]:
-    command.upgrade(alembic_config(scratch_url), "head")
-    migrated = create_engine(scratch_url)
-    yield migrated
-    migrated.dispose()
+from tests.conftest import alembic_config
 
 
 def make_chunk(repo: Repo, **overrides: object) -> Chunk:
@@ -154,13 +116,31 @@ def test_full_text_column_is_generated_from_content(engine: Engine) -> None:
 
 def test_embedding_accepts_the_configured_dimension(engine: Engine) -> None:
     with Session(engine) as session:
-        chunk = make_chunk(add_repo(session), embedding=[0.1] * EMBEDDING_DIMENSION)
+        chunk = make_chunk(
+            add_repo(session), embedding=[0.1] * EMBEDDING_DIMENSION, embedding_model="test-model"
+        )
         session.add(chunk)
         session.flush()
 
 
 def test_embedding_rejects_another_dimension(engine: Engine) -> None:
     with Session(engine) as session:
-        session.add(make_chunk(add_repo(session), embedding=[0.1] * 3))
+        session.add(make_chunk(add_repo(session), embedding=[0.1] * 3, embedding_model="m"))
         with pytest.raises((DataError, StatementError), match="1024"):
+            session.flush()
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        {"embedding": [0.1] * EMBEDDING_DIMENSION},
+        {"embedding_model": "voyage-code-4"},
+    ],
+)
+def test_embedding_and_its_model_are_stored_together(
+    engine: Engine, values: dict[str, object]
+) -> None:
+    with Session(engine) as session:
+        session.add(make_chunk(add_repo(session), **values))
+        with pytest.raises(IntegrityError, match="ck_chunks_embedding_model"):
             session.flush()

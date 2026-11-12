@@ -40,6 +40,9 @@ class Chunk(Base):
     __tablename__ = "chunks"
     __table_args__ = (
         CheckConstraint("strategy IN ('naive', 'ast', 'markdown')", name="ck_chunks_strategy"),
+        CheckConstraint(
+            "(embedding IS NULL) = (embedding_model IS NULL)", name="ck_chunks_embedding_model"
+        ),
         Index(
             "ix_chunks_embedding_hnsw",
             "embedding",
@@ -63,6 +66,8 @@ class Chunk(Base):
     token_count: Mapped[int] = mapped_column(Integer)
     content_hash: Mapped[str] = mapped_column(Text)
     embedding: Mapped[list[float] | None] = mapped_column(VECTOR(EMBEDDING_DIMENSION))
+    embedding_model: Mapped[str | None] = mapped_column(Text)
+    """The model that produced ``embedding``; vectors of different models are never mixed."""
     tsv: Mapped[str] = mapped_column(
         TSVECTOR, Computed("to_tsvector('simple', content)", persisted=True)
     )
