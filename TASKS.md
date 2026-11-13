@@ -304,7 +304,7 @@ uv --directory backend run pytest tests/api/test_query.py
 ---
 
 ### Task 14: Streaming Chat UI
-- **Status:** ⏳ Pending
+- **Status:** ✅ Completed (2026-11-13)
 - **Type:** Feature
 - **Human Step:** None
 - **Read-Only Context Files:** `AGENTS.md`, `docs/plans/RepoLens_Plan.md` (§11)
