@@ -2,7 +2,7 @@
 
 Code-aware RAG that answers questions about a codebase with exact file and line citations, and proves its retrieval quality with an eval suite in CI.
 
-> **Status:** in early development. You can index a public GitHub repository and ask questions with cited answers; the AST chunker, the eval suite and its results come next.
+> **Status:** in development. Indexing, AST chunking, hybrid retrieval and cited, streamed answers work today; the eval suite and its published results come next.
 
 ## Quickstart
 
@@ -21,12 +21,22 @@ The API listens on <http://localhost:8000> (`/api/health`, interactive docs at `
 
 Indexing calls the Voyage API and every question calls the LLM provider, both billed to your own keys. RepoLens never runs code from the repositories it indexes.
 
-## What it will do
+## What works today
 
-- Answer natural-language questions about a repository (TypeScript, JavaScript, Python, Markdown) with cited `path:start-end` sources.
-- Chunk code by AST (function and class level) as well as by fixed-size windows, and publish a measured comparison.
-- Offer a React UI with streaming answers, and an MCP server for clients such as Claude Code.
-- Gate pull requests on eval scores in CI.
+- **Indexing:** a public GitHub repository (TypeScript, JavaScript, Python, Markdown) is cloned without running its code and chunked three ways, stored side by side so they can be compared:
+  - **naive:** windows of about 400 tokens with 15% overlap;
+  - **AST:** one chunk per function, method and class, parsed with tree-sitter and headed by its path, symbol and the imports it uses, with small chunks merged and large ones split on statements;
+  - **Markdown:** documentation split on its `##` and `###` headings.
+- **Retrieval:** vector search with pgvector over `voyage-code-4` embeddings, or hybrid search that fuses it with PostgreSQL full-text search through Reciprocal Rank Fusion (`POST /api/search`, `mode`). Full-text search splits identifiers, so `derive_key` finds `self.derive_key()`.
+- **Answers:** streamed over server-sent events; every `[S1]`-style citation is checked against the retrieved sources, and markers that match none are dropped. The chat currently retrieves with vector search.
+- **UI:** a repository panel with indexing progress and chunk counts per strategy, a streaming chat with a model selector, and citation chips that show `path:start-end`.
+
+## What comes next
+
+- An optional reranker, golden question sets for two public repositories, retrieval and answer metrics, and a published comparison of the chunking strategies.
+- An eval gate in CI, so pull requests cannot lower retrieval quality unnoticed.
+- An MCP server for clients such as Claude Code, and an agentic mode.
+- A source viewer, a debug drawer, a side-by-side compare mode, and a static read-only demo.
 
 The design is in [`docs/plans/RepoLens_Plan.md`](docs/plans/RepoLens_Plan.md).
 
