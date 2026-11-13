@@ -15,7 +15,7 @@
 
 ## Open Decisions (resolve before the task named in each item)
 1. **Embedding model and vector size (before Task 4):** ✅ Resolved (2026-11-05): Voyage `voyage-code-3` with `VECTOR(1024)`, replacing the 1536 in the §5 schema. Revised (2026-11-12, Task 7): `voyage-code-4`, since Voyage now lists `voyage-code-3` under older models; it keeps the 1024 default dimension, so the schema is unchanged. The model is a setting, and vectors from different models are never mixed in one index. The §15 E6 stretch goal can compare `text-embedding-3-small` in the same column through its `dimensions=1024` option, once stored vectors record which model produced them.
-2. **Reranker (before Task 20):** Cohere Rerank or a local cross-encoder such as `bge-reranker`?
+2. **Reranker (before Task 20):** Cohere Rerank, a local cross-encoder such as `bge-reranker`, or a Voyage reranker (`rerank-*` models), which works with the existing Voyage key?
 3. **Eval target repositories (before Task 22):** which public TypeScript repository and which public Python repository, at which pinned commit SHAs?
 4. **Tracing (before Task 30):** self-hosted Langfuse or OpenTelemetry?
 5. **Demo hosting (before Task 38):** ✅ Resolved (2026-11-12): a static, read-only demo at `repolens.okangal.com`, served by Cloudflare Pages, where `okangal.com` already runs. It has no backend and no API keys, so it has no hosting or usage cost; it replays runs recorded locally against a pinned public repository, chosen at Task 35. The app runs locally with the user's own keys, and the owner pays only for one-off local runs (evals, demo data).
