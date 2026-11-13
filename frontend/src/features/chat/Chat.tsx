@@ -1,5 +1,6 @@
 import { type KeyboardEvent, type SyntheticEvent, useId, useState } from 'react';
 import type { DoneData } from '../../api/query';
+import { CitedText } from './CitedText';
 import { ModelSelect, useModels } from './ModelSelect';
 import { type Turn, useChat } from './useChat';
 
@@ -122,8 +123,13 @@ function Answer({ result }: { result: DoneData }) {
   const note = STOP_NOTES[result.stop_reason];
   return (
     <div className="flex flex-col gap-1">
-      <p className="whitespace-pre-wrap">{result.answer}</p>
+      <CitedText text={result.answer} citations={result.citations} />
       {note && <p className="text-sm text-amber-700 dark:text-amber-400">{note}</p>}
+      {result.invalid_labels.length > 0 && (
+        <p className="text-sm text-slate-500">
+          Removed citations that matched no retrieved source: {result.invalid_labels.join(', ')}
+        </p>
+      )}
     </div>
   );
 }

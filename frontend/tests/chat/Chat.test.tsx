@@ -32,6 +32,11 @@ function renderChat(repoId: string | null = 'repo-1') {
   );
 }
 
+/** Match a paragraph by its whole text, across the chips inside it. */
+function paragraph(text: string) {
+  return (_content: string, element: Element | null) => element?.tagName === 'P' && element.textContent === text;
+}
+
 function askQuestion(text: string) {
   fireEvent.change(screen.getByLabelText('Question'), { target: { value: text } });
   fireEvent.click(screen.getByRole('button', { name: 'Ask' }));
@@ -87,7 +92,8 @@ test('streams tokens, then shows the final answer from the done event', async ()
     await Promise.resolve();
   });
 
-  expect(await within(log).findByText('It starts in app.py [S1].')).toBeDefined();
+  const answer = await within(log).findByText(paragraph('It starts in app.py S1.'));
+  expect(within(answer).getByText('S1').getAttribute('tabindex')).toBe('0');
   expect(within(log).queryByText('It starts in app.py [S1][S9].')).toBeNull();
   expect(log.getAttribute('aria-busy')).toBe('false');
 });
@@ -226,4 +232,23 @@ test('an empty model list blocks asking and a failed model request is shown', as
   renderChat();
 
   expect((await screen.findByText('Could not load models: boom')).getAttribute('role')).toBe('alert');
+});
+
+test('labels the server removed are listed under the answer', async () => {
+  vi.stubGlobal(
+    'fetch',
+    routeFetch({
+      '/api/models': () => jsonResponse(models),
+      '/api/query': () =>
+        new Response(sseFrame('done', { ...doneData('See [S1].'), invalid_labels: ['S7', 'S9'] }), {
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+    }).fetchMock,
+  );
+  renderChat();
+  await screen.findByRole('combobox', { name: 'Model' });
+
+  askQuestion('Where?');
+
+  expect(await screen.findByText('Removed citations that matched no retrieved source: S7, S9')).toBeDefined();
 });
