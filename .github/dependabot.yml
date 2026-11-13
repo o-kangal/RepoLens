@@ -30,6 +30,15 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    # Stay on the runtime lines the project targets: Python 3.12, Node.js 24 LTS and nginx stable
+    # (even minor versions). Moving to a new line is a deliberate change, not a weekly bump.
+    ignore:
+      - dependency-name: python
+        update-types: [version-update:semver-major, version-update:semver-minor]
+      - dependency-name: node
+        update-types: [version-update:semver-major]
+      - dependency-name: nginxinc/nginx-unprivileged
+        update-types: [version-update:semver-major, version-update:semver-minor]
     groups:
       docker-images:
         patterns: ['*']
