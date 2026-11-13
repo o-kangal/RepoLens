@@ -21,6 +21,7 @@
 5. **Demo hosting (before Task 38):** ✅ Resolved (2026-11-12): a static, read-only demo at `repolens.okangal.com`, served by Cloudflare Pages, where `okangal.com` already runs. It has no backend and no API keys, so it has no hosting or usage cost; it replays runs recorded locally against a pinned public repository, chosen at Task 35. The app runs locally with the user's own keys, and the owner pays only for one-off local runs (evals, demo data).
 6. **`tokcost` manifest support (before Task 39):** build it once the analyzer exists, or drop it from v1?
 7. **Token counter (before Task 6):** ✅ Resolved (2026-11-12): a dependency-free heuristic in `ingest/tokens.py`, scaled toward tiktoken counts, so chunking and unit tests need no tokenizer download. Once the Task 25 runner exists, a stretch experiment can compare naive chunking under this counter and tiktoken `o200k_base`, with the counter as the only changed variable.
+8. **AST strategy scope and module chunks (Task 18):** ✅ Resolved (2026-11-13): the AST strategy also holds the Markdown heading sections of documentation files, so naive and AST cover the same files and differ only in how they chunk them (Invariant 4). Top-level code forms one module chunk per contiguous run of lines instead of one per file, since a single chunk's range would include lines its content lacks (Invariant 1).
 
 ---
 
@@ -386,7 +387,7 @@ uv --directory backend run pytest tests/ingest/test_ast_chunker.py
 ---
 
 ### Task 18: AST Size Rules and Pipeline Integration
-- **Status:** ⏳ Pending
+- **Status:** ✅ Completed (2026-11-13)
 - **Type:** Feature
 - **Human Step:** None
 - **Read-Only Context Files:** `AGENTS.md`, `docs/plans/RepoLens_Plan.md` (§5, §6.2)

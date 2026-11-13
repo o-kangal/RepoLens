@@ -98,7 +98,7 @@ def test_indexing_moves_from_running_to_done(
         "commit_sha": "abc123",
         "status": "done",
         "error": None,
-        "chunk_counts": {"naive": 2, "ast": 0, "markdown": 2},
+        "chunk_counts": {"naive": 2, "ast": 3, "markdown": 2},
     }
 
 

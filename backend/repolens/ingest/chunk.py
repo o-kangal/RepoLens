@@ -20,6 +20,7 @@ class ChunkKind(StrEnum):
     FUNCTION = "function"
     METHOD = "method"
     CLASS = "class"
+    MODULE = "module"
 
 
 @dataclass(frozen=True, slots=True)

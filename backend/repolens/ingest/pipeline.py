@@ -10,7 +10,7 @@ import uuid
 from collections import Counter
 from collections.abc import Callable, Iterable
 from contextlib import AbstractAsyncContextManager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from sqlalchemy import delete, func, insert, select, update
 from sqlalchemy.dialects.postgresql import distinct_on
@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from repolens.db.models import EMBEDDING_DIMENSION, Repo, RepoStatus
 from repolens.db.models import Chunk as ChunkRow
+from repolens.ingest.ast_chunker import chunk_ast
 from repolens.ingest.chunk import Chunk, Strategy
 from repolens.ingest.clone import (
     Checkout,
@@ -180,11 +181,20 @@ async def _index(
 
 
 def chunk_files(files: Iterable[SourceFile]) -> list[Chunk]:
+    """Chunk every file with every strategy.
+
+    The AST strategy covers the same files as the naive one, so the two differ only in how they
+    chunk: code by syntax tree, documentation by its Markdown heading sections.
+    """
     chunks: list[Chunk] = []
     for source in files:
         chunks.extend(chunk_naive(source))
         if source.language is Language.MARKDOWN:
-            chunks.extend(chunk_markdown(source))
+            sections = chunk_markdown(source)
+            chunks.extend(sections)
+            chunks.extend(replace(section, strategy=Strategy.AST) for section in sections)
+        else:
+            chunks.extend(chunk_ast(source))
     return chunks
 
 

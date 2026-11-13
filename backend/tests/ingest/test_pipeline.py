@@ -157,17 +157,26 @@ async def test_indexing_stores_every_strategy_and_marks_done(
 
     assert requested == [(GitHubRepository("acme", "app"), "main")]
     assert (result.url, result.commit_sha) == (URL, "abc123")
-    assert result.chunk_counts == {Strategy.NAIVE: 2, Strategy.MARKDOWN: 2}
+    assert result.chunk_counts == {Strategy.NAIVE: 2, Strategy.AST: 3, Strategy.MARKDOWN: 2}
     with sessions() as session:
         repo = session.get_one(Repo, result.repo_id)
         assert (repo.status, repo.commit_sha, repo.error) == (RepoStatus.DONE, "abc123", None)
-        rows = session.scalars(select(ChunkRow).order_by(ChunkRow.strategy, ChunkRow.start_line))
-        stored = [(row.strategy, row.path, row.start_line, row.end_line) for row in rows]
+        rows = session.scalars(
+            select(ChunkRow).order_by(ChunkRow.strategy, ChunkRow.path, ChunkRow.start_line)
+        )
+        stored = [
+            (row.strategy, row.path, row.start_line, row.end_line, row.kind, row.symbol)
+            for row in rows
+        ]
+        # AST chunks sit beside the naive ones; for documentation they are the heading sections.
         assert stored == [
-            ("markdown", "README.md", 1, 2),
-            ("markdown", "README.md", 3, 5),
-            ("naive", "README.md", 1, 5),
-            ("naive", "src/main.py", 1, 2),
+            ("ast", "README.md", 1, 2, "section", None),
+            ("ast", "README.md", 3, 5, "section", None),
+            ("ast", "src/main.py", 1, 2, "function", "main"),
+            ("markdown", "README.md", 1, 2, "section", None),
+            ("markdown", "README.md", 3, 5, "section", None),
+            ("naive", "README.md", 1, 5, "window", None),
+            ("naive", "src/main.py", 1, 2, "window", None),
         ]
         assert session.scalar(select(func.count()).where(ChunkRow.embedding.is_(None))) == 0
         assert set(session.scalars(select(ChunkRow.embedding_model))) == {"fake"}
@@ -183,7 +192,7 @@ async def test_status_reports_chunk_counts_per_strategy(
 
     assert found is not None
     assert (found.status, found.commit_sha) == (RepoStatus.DONE, "abc123")
-    assert found.chunk_counts == {Strategy.NAIVE: 2, Strategy.AST: 0, Strategy.MARKDOWN: 2}
+    assert found.chunk_counts == {Strategy.NAIVE: 2, Strategy.AST: 3, Strategy.MARKDOWN: 2}
     assert repository_status(sessions, uuid.uuid4()) is None
 
 
@@ -195,8 +204,15 @@ async def test_identical_contents_are_embedded_once(
 
     result = await ingest(sessions, clone, embedder)
 
-    assert embedder.calls == [["same = 1\n"]]
-    assert (result.embedded, result.reused) == (1, 0)
+    # The naive windows match; AST chunks differ because their header names the path.
+    assert embedder.calls == [
+        [
+            "same = 1\n",
+            "# path: a.py\n# symbol: module-level code\nsame = 1\n",
+            "# path: b.py\n# symbol: module-level code\nsame = 1\n",
+        ]
+    ]
+    assert (result.embedded, result.reused) == (3, 0)
 
 
 async def test_stored_hashes_are_not_re_embedded(
@@ -209,8 +225,14 @@ async def test_stored_hashes_are_not_re_embedded(
     embedder = FakeEmbedder()
     result = await ingest(sessions, local_clone(root, "def456")[0], embedder)
 
-    assert embedder.calls == [["def main():\n    return 2\n"]]
-    assert (result.embedded, result.reused) == (1, 3)
+    assert embedder.calls == [
+        [
+            "def main():\n    return 2\n",
+            "# path: src/main.py\n# symbol: main (function)\ndef main():\n    return 2\n",
+        ]
+    ]
+    # The README's AST sections share their hashes with its Markdown sections.
+    assert (result.embedded, result.reused) == (2, 3)
     assert count(sessions, Repo) == 2
 
 
@@ -222,7 +244,7 @@ async def test_embeddings_of_another_model_are_not_reused(
 
     result = await ingest(sessions, clone, FakeEmbedder(model="new"))
 
-    assert (result.embedded, result.reused) == (4, 0)
+    assert (result.embedded, result.reused) == (5, 0)
     with sessions() as session:
         assert set(session.scalars(select(ChunkRow.embedding_model))) == {"new"}
 
@@ -235,10 +257,10 @@ async def test_reindexing_a_commit_replaces_the_earlier_index(
 
     again = await ingest(sessions, clone)
 
-    assert (again.embedded, again.reused) == (0, 4)
+    assert (again.embedded, again.reused) == (0, 5)
     assert repository_status(sessions, first.repo_id) is None
     assert count(sessions, Repo) == 1
-    assert count(sessions, ChunkRow) == 4
+    assert count(sessions, ChunkRow) == 7
 
 
 async def test_walk_failure_marks_failed_removes_the_clone_and_stores_no_chunks(

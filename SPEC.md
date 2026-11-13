@@ -42,7 +42,7 @@ Code-aware RAG that answers questions about a codebase with exact file and line 
 ## 4. Business Rules
 1. Ingestion accepts only `https://github.com/...` URLs, uses a shallow clone in a temporary directory, enforces size and file-count limits, skips binaries and files over 1 MB, and never executes repository code.
 2. Naive chunks use a window of about 400 tokens with 15% overlap, split on line boundaries.
-3. AST chunks are one per function, method or class, each with a context header (path, symbol, imports). Nodes over about 800 tokens are split on child statements, nodes under about 40 tokens are merged with siblings, and top-level code forms one module chunk per file.
+3. AST chunks are one per function, method or class, each with a context header (path, symbol, imports). Nodes over about 800 tokens are split on child statements, nodes under about 40 tokens are merged with siblings, and top-level code forms module chunks, one per contiguous run of lines, so every chunk's line range matches its content. The AST strategy chunks Markdown files by their heading sections, as the Markdown strategy does, so it covers the same files as the naive strategy.
 4. Markdown chunks split on `##` and `###` and keep the heading path as a header.
 5. All strategies for a repository are stored side by side, identified by `(url, commit_sha)` and `strategy`. A chunk whose `content_hash` is already stored is not re-embedded.
 6. Hybrid retrieval takes the top 30 from vector search and the top 30 from full-text search, fuses them with RRF (`score = Σ 1/(60 + rank)`) and keeps the top 20. The optional reranker keeps the top 8.
