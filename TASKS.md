@@ -22,6 +22,7 @@
 6. **`tokcost` manifest support (before Task 39):** build it once the analyzer exists, or drop it from v1?
 7. **Token counter (before Task 6):** ✅ Resolved (2026-11-12): a dependency-free heuristic in `ingest/tokens.py`, scaled toward tiktoken counts, so chunking and unit tests need no tokenizer download. Once the Task 25 runner exists, a stretch experiment can compare naive chunking under this counter and tiktoken `o200k_base`, with the counter as the only changed variable.
 8. **AST strategy scope and module chunks (Task 18):** ✅ Resolved (2026-11-13): the AST strategy also holds the Markdown heading sections of documentation files, so naive and AST cover the same files and differ only in how they chunk them (Invariant 4). Top-level code forms one module chunk per contiguous run of lines instead of one per file, since a single chunk's range would include lines its content lacks (Invariant 1).
+9. **Full-text tokens for code (Task 19):** ✅ Resolved (2026-11-13): `chunks.tsv` treats every run of non-alphanumeric characters as a word break (migration 0004), replacing the plain `to_tsvector('simple', content)` of the §5 schema, which kept `self.derive` and `UserService.findById` as single tokens so identifiers could not be found. Queries are split the same way, each term matches as a phrase, terms are joined with OR, and English stop words are dropped.
 
 ---
 
@@ -409,7 +410,7 @@ uv --directory backend run pytest tests/ingest/test_ast_chunker.py tests/ingest/
 ---
 
 ### Task 19: Full-Text Search and RRF Fusion
-- **Status:** ⏳ Pending
+- **Status:** ✅ Completed (2026-11-13)
 - **Type:** Feature
 - **Human Step:** None
 - **Read-Only Context Files:** `AGENTS.md`, `docs/plans/RepoLens_Plan.md` (§7)

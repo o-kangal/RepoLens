@@ -87,5 +87,10 @@ class Chunk(Base):
     embedding_model: Mapped[str | None] = mapped_column(Text)
     """The model that produced ``embedding``; vectors of different models are never mixed."""
     tsv: Mapped[str] = mapped_column(
-        TSVECTOR, Computed("to_tsvector('simple', content)", persisted=True)
+        TSVECTOR,
+        Computed(
+            "to_tsvector('simple', regexp_replace(content, '[^[:alnum:]]+', ' ', 'g'))",
+            persisted=True,
+        ),
     )
+    """Words of ``content``, with identifiers split at every non-alphanumeric character."""

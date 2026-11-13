@@ -92,6 +92,7 @@ The commands above start working once Tasks 1–3 have created the tooling.
 - The frontend reaches the API only through a same-origin `/api` proxy (Vite in dev, nginx in Compose), since the backend sends no CORS headers. Keep `proxy_buffering off` on the nginx `/api` location, or SSE answers arrive in one piece.
 - Voyage keys without a payment method are limited to 3 RPM and 10K TPM. One embedding batch can hold up to 60K tokens, more than that whole budget, so indexing fails even with the embedder's retries. Add a payment method; the free tokens still apply.
 - Test and migration code reads only `REPOLENS_DATABASE_URL` from `.env` (`dotenv_values`), never `load_dotenv` on the whole file: `.env` also holds real provider keys, and once they are in the environment every `Settings()` in the test process picks them up.
+- Postgres's default text-search parser keeps dotted names (`self.derive`, `UserService.findById`) as single tokens. `chunks.tsv` splits content at every non-alphanumeric run (migration 0004), and a full-text query must be split with the same `regexp_replace`, or identifiers stop matching.
 
 ---
 

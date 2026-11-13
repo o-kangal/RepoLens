@@ -10,12 +10,13 @@ from sqlalchemy.orm import Session, sessionmaker
 from repolens.api.deps import get_embedder, get_session_factory
 from repolens.ingest.chunk import Strategy
 from repolens.providers.embeddings import Embedder
+from repolens.retrieval.search import SearchMode
+from repolens.retrieval.search import search as run_search
 from repolens.retrieval.types import (
     EmbeddingModelMismatchError,
     RepositoryNotFoundError,
     RepositoryNotReadyError,
 )
-from repolens.retrieval.vector import vector_search
 
 router = APIRouter(prefix="/api", tags=["search"])
 
@@ -26,6 +27,10 @@ class SearchRequest(BaseModel):
     repo_id: uuid.UUID
     query: str = Field(min_length=1, max_length=2000)
     strategy: Strategy = Strategy.NAIVE
+    mode: SearchMode = Field(
+        default=SearchMode.VECTOR,
+        description="vector, or hybrid: vector and full-text search fused with RRF, top 20",
+    )
     k: int = Field(default=8, ge=1, le=50)
 
 
@@ -52,12 +57,13 @@ async def search(
     embedder: Annotated[Embedder, Depends(get_embedder)],
 ) -> SearchResponse:
     try:
-        chunks = await vector_search(
+        chunks = await run_search(
             session_factory,
             embedder,
             repo_id=body.repo_id,
             strategy=body.strategy,
             query=body.query,
+            mode=body.mode,
             k=body.k,
         )
     except RepositoryNotFoundError as exc:

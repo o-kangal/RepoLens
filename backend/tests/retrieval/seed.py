@@ -46,6 +46,7 @@ def add_chunk(
     *,
     strategy: str = "naive",
     model: str = MODEL,
+    content: str | None = None,
 ) -> None:
     with sessions.begin() as session:
         session.add(
@@ -57,7 +58,7 @@ def add_chunk(
                 kind="window",
                 start_line=1,
                 end_line=3,
-                content=f"content of {path}",
+                content=content if content is not None else f"content of {path}",
                 token_count=4,
                 content_hash=uuid.uuid4().hex,
                 embedding=embedding,
