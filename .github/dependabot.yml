@@ -23,6 +23,24 @@ updates:
         update-types: [minor, patch]
     open-pull-requests-limit: 5
 
+  # Base image tags and their digests, in the Dockerfiles and in docker-compose.yml.
+  - package-ecosystem: docker
+    directories: [/backend, /frontend]
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      docker-images:
+        patterns: ['*']
+
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+
   - package-ecosystem: uv
     directory: /backend
     schedule:

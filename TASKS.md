@@ -347,7 +347,7 @@ pnpm run test
 ---
 
 ### Task 16: Full-Stack Compose and Phase 1 Exit
-- **Status:** ⏳ Pending
+- **Status:** ✅ Completed (2026-11-13)
 - **Type:** Setup
 - **Human Step:** None
 - **Read-Only Context Files:** `AGENTS.md`, `docs/plans/RepoLens_Plan.md` (§1, §13)

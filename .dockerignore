@@ -1,0 +1,16 @@
+# Allowlist: only what the images build from reaches the build context, never .env or caches.
+*
+!backend/pyproject.toml
+!backend/uv.lock
+!backend/.python-version
+!backend/alembic.ini
+!backend/migrations/
+!backend/repolens/
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!tsconfig.json
+!frontend/
+**/__pycache__
+**/node_modules
+frontend/dist

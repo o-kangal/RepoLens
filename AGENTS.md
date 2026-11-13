@@ -89,6 +89,8 @@ The commands above start working once Tasks 1–3 have created the tooling.
 - pgvector's HNSW index stops after `hnsw.ef_search` candidates and applies `WHERE` filters afterwards, so a filtered vector query can return fewer than k rows, or none. Run filtered vector searches with `SET LOCAL hnsw.iterative_scan = strict_order` (pgvector ≥ 0.8).
 - In a FastAPI SSE endpoint (`response_class=EventSourceResponse`), an `HTTPException` raised inside the generator, even before the first `yield`, does not become an HTTP error response. Validate requests in dependencies, and report failures after the stream opens as `error` events.
 - `pytest` needs the database (`docker compose up -d --wait db`). DB tests use scratch databases and fail, rather than skip, when `REPOLENS_DATABASE_URL` is missing.
+- The frontend reaches the API only through a same-origin `/api` proxy (Vite in dev, nginx in Compose), since the backend sends no CORS headers. Keep `proxy_buffering off` on the nginx `/api` location, or SSE answers arrive in one piece.
+- Voyage keys without a payment method are limited to 3 RPM and 10K TPM, and the embedder does not retry a 429, so indexing fails at the first request. Add a payment method; the free tokens still apply.
 
 ---
 

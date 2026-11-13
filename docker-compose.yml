@@ -15,5 +15,55 @@ services:
       timeout: 5s
       retries: 12
 
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    # Only the settings the API reads; empty values fall back to its defaults.
+    environment:
+      REPOLENS_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      REPOLENS_DEBUG: ${REPOLENS_DEBUG:-}
+      REPOLENS_EMBEDDING_MODEL: ${REPOLENS_EMBEDDING_MODEL:-}
+      REPOLENS_VOYAGE_API_KEY: ${REPOLENS_VOYAGE_API_KEY:-}
+      REPOLENS_LLM_PROVIDER: ${REPOLENS_LLM_PROVIDER:-}
+      REPOLENS_LLM_MODEL: ${REPOLENS_LLM_MODEL:-}
+      REPOLENS_LLM_MODELS: ${REPOLENS_LLM_MODELS:-}
+      REPOLENS_LLM_REFUSAL_FALLBACK: ${REPOLENS_LLM_REFUSAL_FALLBACK:-}
+      REPOLENS_ANTHROPIC_API_KEY: ${REPOLENS_ANTHROPIC_API_KEY:-}
+      REPOLENS_OPENAI_API_KEY: ${REPOLENS_OPENAI_API_KEY:-}
+      REPOLENS_AZURE_OPENAI_ENDPOINT: ${REPOLENS_AZURE_OPENAI_ENDPOINT:-}
+      REPOLENS_AZURE_OPENAI_API_KEY: ${REPOLENS_AZURE_OPENAI_API_KEY:-}
+      REPOLENS_AZURE_OPENAI_API_VERSION: ${REPOLENS_AZURE_OPENAI_API_VERSION:-}
+    ports:
+      - 127.0.0.1:${REPOLENS_API_PORT:-8000}:8000
+    depends_on:
+      db:
+        condition: service_healthy
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 5s
+      timeout: 5s
+      start_period: 30s
+      retries: 12
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - 127.0.0.1:${REPOLENS_WEB_PORT:-8080}:8080
+    depends_on:
+      backend:
+        condition: service_healthy
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: [CMD, wget, --quiet, --spider, http://127.0.0.1:8080/]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
 volumes:
   db-data:
