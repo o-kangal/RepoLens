@@ -367,7 +367,7 @@ curl --fail --silent http://localhost:8000/api/health
 ---
 
 ### Task 17: AST Chunker Core
-- **Status:** ⏳ Pending
+- **Status:** ✅ Completed (2026-11-13)
 - **Type:** Feature
 - **Human Step:** None
 - **Read-Only Context Files:** `AGENTS.md`, `docs/plans/RepoLens_Plan.md` (§6.2)

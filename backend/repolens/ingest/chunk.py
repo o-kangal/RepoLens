@@ -17,6 +17,9 @@ class Strategy(StrEnum):
 class ChunkKind(StrEnum):
     WINDOW = "window"
     SECTION = "section"
+    FUNCTION = "function"
+    METHOD = "method"
+    CLASS = "class"
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,12 +47,13 @@ def make_chunk(
     start_line: int,
     end_line: int,
     content: str,
+    symbol: str | None = None,
 ) -> Chunk:
     return Chunk(
         strategy=strategy,
         path=source.path,
         language=source.language,
-        symbol=None,
+        symbol=symbol,
         kind=kind,
         start_line=start_line,
         end_line=end_line,
