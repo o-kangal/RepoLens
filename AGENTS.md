@@ -90,7 +90,7 @@ The commands above start working once Tasks 1–3 have created the tooling.
 - In a FastAPI SSE endpoint (`response_class=EventSourceResponse`), an `HTTPException` raised inside the generator, even before the first `yield`, does not become an HTTP error response. Validate requests in dependencies, and report failures after the stream opens as `error` events.
 - `pytest` needs the database (`docker compose up -d --wait db`). DB tests use scratch databases and fail, rather than skip, when `REPOLENS_DATABASE_URL` is missing.
 - The frontend reaches the API only through a same-origin `/api` proxy (Vite in dev, nginx in Compose), since the backend sends no CORS headers. Keep `proxy_buffering off` on the nginx `/api` location, or SSE answers arrive in one piece.
-- Voyage keys without a payment method are limited to 3 RPM and 10K TPM, and the embedder does not retry a 429, so indexing fails at the first request. Add a payment method; the free tokens still apply.
+- Voyage keys without a payment method are limited to 3 RPM and 10K TPM. One embedding batch can hold up to 60K tokens, more than that whole budget, so indexing fails even with the embedder's retries. Add a payment method; the free tokens still apply.
 
 ---
 
