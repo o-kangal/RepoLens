@@ -1,6 +1,6 @@
 # Web image: the built app behind nginx, which also forwards /api to the backend so the browser
 # talks to one origin. Built from the repository root: docker build -f frontend/Dockerfile .
-FROM node:24.22.3-trixie-slim@sha256:af02d57b57719b9657a45199a79264a9437940cd55b3c7b3fc99615654f124a0 AS build
+FROM node:26.13.0-trixie-slim@sha256:5adad64f9a1fca2d51972caa65983634c8a774eb300d72b20f7f2a0f60368072 AS build
 
 # The version in packageManager of package.json.
 RUN npm install --global pnpm@12.16.1
@@ -11,7 +11,7 @@ RUN pnpm install --frozen-lockfile
 COPY frontend frontend
 RUN pnpm run build
 
-FROM nginxinc/nginx-unprivileged:1.30.6-alpine@sha256:f5116ed4606f3eb015dd4a8e28cb9b351476dc0ad4bc6e9f93b19cec130cdf03
+FROM nginxinc/nginx-unprivileged:1.31.7-alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e
 COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /src/frontend/dist /usr/share/nginx/html
 EXPOSE 8080
