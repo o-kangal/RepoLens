@@ -7,9 +7,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session, sessionmaker
 
-from repolens.api.deps import get_embedder, get_session_factory
+from repolens.api.deps import get_embedder, get_reranker, get_session_factory, require_reranker
 from repolens.ingest.chunk import Strategy
 from repolens.providers.embeddings import Embedder
+from repolens.retrieval.rerank import Reranker, RerankError
 from repolens.retrieval.search import SearchMode
 from repolens.retrieval.search import search as run_search
 from repolens.retrieval.types import (
@@ -31,6 +32,9 @@ class SearchRequest(BaseModel):
         default=SearchMode.VECTOR,
         description="vector, or hybrid: vector and full-text search fused with RRF, top 20",
     )
+    rerank: bool = Field(
+        default=False, description="rerank the mode's top 20 and keep at most the top 8"
+    )
     k: int = Field(default=8, ge=1, le=50)
 
 
@@ -50,11 +54,18 @@ class SearchResponse(BaseModel):
     results: list[SearchHit]
 
 
+def choose_reranker(
+    body: SearchRequest, reranker: Annotated[Reranker | None, Depends(get_reranker)]
+) -> Reranker | None:
+    return require_reranker(reranker) if body.rerank else None
+
+
 @router.post("/search")
 async def search(
     body: SearchRequest,
     session_factory: Annotated[sessionmaker[Session], Depends(get_session_factory)],
     embedder: Annotated[Embedder, Depends(get_embedder)],
+    reranker: Annotated[Reranker | None, Depends(choose_reranker)],
 ) -> SearchResponse:
     try:
         chunks = await run_search(
@@ -65,11 +76,14 @@ async def search(
             query=body.query,
             mode=body.mode,
             k=body.k,
+            reranker=reranker,
         )
     except RepositoryNotFoundError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "repository not found") from exc
     except (RepositoryNotReadyError, EmbeddingModelMismatchError) as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+    except RerankError as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
     return SearchResponse(
         results=[
             SearchHit(

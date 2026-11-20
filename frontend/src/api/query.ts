@@ -10,6 +10,7 @@ export type QueryErrorCode =
   | 'embedding_model_mismatch'
   | 'embedding_failed'
   | 'llm_failed'
+  | 'rerank_failed'
   | 'internal';
 
 export interface QueryRequest {
@@ -58,6 +59,7 @@ const ERROR_CODES: readonly string[] = [
   'embedding_model_mismatch',
   'embedding_failed',
   'llm_failed',
+  'rerank_failed',
   'internal',
 ] satisfies QueryErrorCode[];
 

@@ -9,7 +9,7 @@ from pydantic import SecretStr
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from repolens.api.deps import get_embedder, get_llms
+from repolens.api.deps import get_embedder, get_llms, get_reranker
 from repolens.config import Settings
 from repolens.db.models import RepoStatus
 from repolens.generation.prompt import NOT_FOUND_ANSWER, SYSTEM_PROMPT
@@ -23,6 +23,7 @@ from repolens.providers.llm import (
     ScriptedLLM,
     StopReason,
 )
+from repolens.retrieval.rerank import FakeReranker, Reranker, RerankError, RerankResult
 from tests.retrieval.seed import QueryEmbedder, add_chunk, add_repo, vector
 
 QUESTION = "where is the user loaded?"
@@ -236,7 +237,8 @@ def test_unexpected_failure_hides_its_details(app: FastAPI, repo: uuid.UUID) -> 
         {"question": ""},
         {"question": "x" * 2001},
         {"strategy": "semantic"},
-        {"rerank": True},
+        {"mode": "keyword"},
+        {"rerank": "maybe"},
         {"repo_id": "not-a-uuid"},
         {"unexpected": 1},
     ],
@@ -268,3 +270,83 @@ def test_stop_reason_is_reported(app: FastAPI, repo: uuid.UUID) -> None:
         stream = events(test_client, repo_id=str(repo))
 
     assert stream[-1][1]["stop_reason"] == "max_tokens"
+
+
+class FailingReranker(FakeReranker):
+    async def rerank(self, query: str, documents: Sequence[str], *, top: int) -> list[RerankResult]:
+        raise RerankError("Voyage rerank returned HTTP 503: busy")
+
+
+def with_reranker(app: FastAPI, reranker: Reranker | None) -> None:
+    app.dependency_overrides[get_reranker] = lambda: reranker
+
+
+def test_rerank_answers_from_the_reranked_sources(
+    app: FastAPI, client: TestClient, sessions: sessionmaker[Session]
+) -> None:
+    repo_id = add_repo(sessions)
+    for i in range(10):
+        add_chunk(sessions, repo_id, f"f{i}.py", vector((0, 1.0), (1, i / 10)))
+    # f9.py is last by vector search; the reranker puts it first. Ties keep the vector order,
+    # so f0.py to f6.py fill the rest of the top 8 and f7.py and f8.py are dropped.
+    reranker = FakeReranker({"f9.py": 1.0})
+    with_reranker(app, reranker)
+
+    stream = events(client, repo_id=str(repo_id), rerank=True)
+
+    [(query, documents, top)] = reranker.calls
+    assert query == QUESTION
+    assert [document.split(":", 1)[0] for document in documents] == [f"f{i}.py" for i in range(10)]
+    assert top == 8
+    sources = stream[0][1]["sources"]
+    assert isinstance(sources, list)
+    assert {source["path"] for source in sources} == {f"f{i}.py" for i in (*range(7), 9)}
+
+
+def test_hybrid_mode_reaches_the_pipeline(
+    client: TestClient, sessions: sessionmaker[Session]
+) -> None:
+    repo_id = add_repo(sessions)
+    for i in range(20):
+        add_chunk(sessions, repo_id, f"near{i:02}.py", vector((0, 1.0), (1, i / 10)))
+    # Last by vector, so outside the 20 vector search keeps; only full text finds it.
+    add_chunk(sessions, repo_id, "users.py", vector((5, 1.0)), content="def load_user(): ...\n")
+
+    def paths(**body: object) -> list[str]:
+        stream = events(client, repo_id=str(repo_id), **body)
+        sources = stream[0][1]["sources"]
+        assert isinstance(sources, list)
+        return [source["path"] for source in sources]
+
+    assert "users.py" not in paths()
+    assert "users.py" in paths(mode="hybrid")
+
+
+def test_a_rerank_failure_is_an_error_event(
+    app: FastAPI, client: TestClient, repo: uuid.UUID, default_llm: ScriptedLLM
+) -> None:
+    with_reranker(app, FailingReranker())
+
+    stream = events(client, repo_id=str(repo), rerank=True)
+
+    assert stream == [
+        (
+            "error",
+            {"code": "rerank_failed", "message": "Voyage rerank returned HTTP 503: busy"},
+        )
+    ]
+    assert default_llm.calls == []
+
+
+def test_rerank_needs_a_reranker(
+    app: FastAPI, client: TestClient, repo: uuid.UUID, default_llm: ScriptedLLM
+) -> None:
+    with_reranker(app, None)
+
+    response = client.post(
+        "/api/query", json={"repo_id": str(repo), "question": QUESTION, "rerank": True}
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "no reranker is configured"}
+    assert default_llm.calls == []

@@ -1,5 +1,5 @@
 import uuid
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 
 import pytest
 from fastapi import FastAPI
@@ -8,10 +8,11 @@ from pydantic import SecretStr
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from repolens.api.deps import get_embedder
+from repolens.api.deps import get_embedder, get_reranker
 from repolens.config import Settings
 from repolens.db.models import RepoStatus
 from repolens.main import create_app
+from repolens.retrieval.rerank import FakeReranker, RerankError, RerankResult
 from tests.retrieval.seed import QueryEmbedder, add_chunk, add_repo, vector
 
 QUERY = "where is the user loaded?"
@@ -101,6 +102,7 @@ def test_hybrid_mode_adds_full_text_matches(
         {"k": 51},
         {"strategy": "semantic"},
         {"mode": "keyword"},
+        {"rerank": "maybe"},
         {"repo_id": "not-a-uuid"},
         {"unexpected": True},
     ],
@@ -148,3 +150,54 @@ def test_search_needs_an_embedding_provider(app: FastAPI) -> None:
         )
 
     assert response.status_code == 503
+
+
+class FailingReranker(FakeReranker):
+    async def rerank(self, query: str, documents: Sequence[str], *, top: int) -> list[RerankResult]:
+        raise RerankError("Voyage rerank returned HTTP 503: busy")
+
+
+def test_rerank_reorders_hits_and_reports_rerank_scores(
+    app: FastAPI, client: TestClient, sessions: sessionmaker[Session]
+) -> None:
+    repo = add_repo(sessions)
+    add_chunk(sessions, repo, "exact.py", vector((0, 1.0)))
+    add_chunk(sessions, repo, "close.py", vector((0, 2.0), (1, 1.0)))
+    app.dependency_overrides[get_reranker] = lambda: FakeReranker({"close.py": 0.7})
+
+    response = client.post(
+        "/api/search", json={"repo_id": str(repo), "query": QUERY, "rerank": True}
+    )
+
+    assert [(hit["path"], hit["score"]) for hit in response.json()["results"]] == [
+        ("close.py", 0.7),
+        ("exact.py", 0.0),
+    ]
+
+
+def test_rerank_needs_a_reranker(
+    app: FastAPI, client: TestClient, sessions: sessionmaker[Session]
+) -> None:
+    app.dependency_overrides[get_reranker] = lambda: None
+
+    response = client.post(
+        "/api/search", json={"repo_id": str(add_repo(sessions)), "query": QUERY, "rerank": True}
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "no reranker is configured"}
+
+
+def test_a_rerank_failure_is_a_bad_gateway(
+    app: FastAPI, client: TestClient, sessions: sessionmaker[Session]
+) -> None:
+    repo = add_repo(sessions)
+    add_chunk(sessions, repo, "exact.py", vector((0, 1.0)))
+    app.dependency_overrides[get_reranker] = lambda: FailingReranker()
+
+    response = client.post(
+        "/api/search", json={"repo_id": str(repo), "query": QUERY, "rerank": True}
+    )
+
+    assert response.status_code == 502
+    assert response.json() == {"detail": "Voyage rerank returned HTTP 503: busy"}

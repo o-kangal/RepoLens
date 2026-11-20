@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     database_url: SecretStr | None = None
     embedding_model: str = "voyage-code-4"
     voyage_api_key: SecretStr | None = None
+    rerank_model: str = "rerank-3"
+    """Voyage reranker, used when a request asks for reranking."""
 
     llm_provider: Literal["anthropic", "openai", "azure_openai"] = "anthropic"
     llm_model: str | None = None

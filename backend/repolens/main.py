@@ -18,6 +18,7 @@ from repolens.db.session import create_db_engine, create_session_factory
 from repolens.ingest.pipeline import fail_interrupted_jobs
 from repolens.providers.embeddings import VoyageEmbedder
 from repolens.providers.llm import create_llms
+from repolens.retrieval.rerank import VoyageReranker
 
 logger = logging.getLogger(__name__)
 
@@ -34,17 +35,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if interrupted:
             logger.warning("marked %d interrupted indexing jobs as failed", interrupted)
         async with httpx2.AsyncClient() as http:
-            embedder = (
-                VoyageEmbedder(
-                    http=http, api_key=resolved.voyage_api_key, model=resolved.embedding_model
-                )
-                if resolved.voyage_api_key is not None
-                else None
-            )
+            key = resolved.voyage_api_key
             application.state.services = Services(
                 session_factory=session_factory,
-                embedder=embedder,
+                embedder=VoyageEmbedder(http=http, api_key=key, model=resolved.embedding_model)
+                if key is not None
+                else None,
                 llms=create_llms(resolved, http),
+                reranker=VoyageReranker(http=http, api_key=key, model=resolved.rerank_model)
+                if key is not None
+                else None,
             )
             yield
         engine.dispose()

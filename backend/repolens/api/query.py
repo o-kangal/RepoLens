@@ -2,14 +2,20 @@
 
 import uuid
 from collections.abc import AsyncIterator
-from typing import Annotated, Literal
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.sse import EventSourceResponse, ServerSentEvent
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session, sessionmaker
 
-from repolens.api.deps import get_embedder, get_llms, get_session_factory
+from repolens.api.deps import (
+    get_embedder,
+    get_llms,
+    get_reranker,
+    get_session_factory,
+    require_reranker,
+)
 from repolens.generation.pipeline import (
     DoneEvent,
     ErrorCode,
@@ -22,6 +28,8 @@ from repolens.generation.pipeline import (
 from repolens.ingest.chunk import Strategy
 from repolens.providers.embeddings import Embedder
 from repolens.providers.llm import LLM, StopReason
+from repolens.retrieval.rerank import Reranker
+from repolens.retrieval.search import SearchMode
 
 router = APIRouter(prefix="/api", tags=["query"])
 
@@ -34,8 +42,12 @@ class QueryRequest(BaseModel):
     repo_id: uuid.UUID
     question: str = Field(min_length=1, max_length=2000)
     strategy: Strategy = Strategy.NAIVE
-    rerank: Literal[False] = Field(
-        default=False, description="Reranking is not available yet; only false is accepted."
+    mode: SearchMode = Field(
+        default=SearchMode.VECTOR,
+        description="vector, or hybrid: vector and full-text search fused with RRF, top 20",
+    )
+    rerank: bool = Field(
+        default=False, description="rerank the mode's top 20 and answer from the top 8"
     )
     model: str | None = Field(
         default=None, description="One of GET /api/models; default if omitted"
@@ -103,12 +115,19 @@ def choose_llm(body: QueryRequest, llms: LLMs) -> LLM:
     return llm
 
 
+def choose_reranker(
+    body: QueryRequest, reranker: Annotated[Reranker | None, Depends(get_reranker)]
+) -> Reranker | None:
+    return require_reranker(reranker) if body.rerank else None
+
+
 @router.post("/query", response_class=EventSourceResponse)
 async def query(
     body: QueryRequest,
     session_factory: Annotated[sessionmaker[Session], Depends(get_session_factory)],
     embedder: Annotated[Embedder, Depends(get_embedder)],
     llm: Annotated[LLM, Depends(choose_llm)],
+    reranker: Annotated[Reranker | None, Depends(choose_reranker)],
 ) -> AsyncIterator[ServerSentEvent]:
     """Stream ``sources``, then ``token`` events, then one ``done`` or ``error`` event.
 
@@ -118,8 +137,10 @@ async def query(
         body.question,
         repo_id=body.repo_id,
         strategy=body.strategy,
+        mode=body.mode,
         session_factory=session_factory,
         embedder=embedder,
+        reranker=reranker,
         llm=llm,
     ):
         yield _to_sse(event)

@@ -9,6 +9,7 @@ from repolens.ingest.clone import clone_github
 from repolens.ingest.pipeline import Clone
 from repolens.providers.embeddings import Embedder
 from repolens.providers.llm import LLM
+from repolens.retrieval.rerank import Reranker
 
 
 @dataclass(frozen=True, slots=True)
@@ -18,6 +19,8 @@ class Services:
     """None when no embedding provider is configured."""
     llms: dict[str, LLM]
     """One LLM per model a query may choose, the default first; empty without credentials."""
+    reranker: Reranker | None
+    """None when no reranking provider is configured."""
 
 
 def get_services(request: Request) -> Services:
@@ -40,6 +43,17 @@ def get_embedder(request: Request) -> Embedder:
 
 def get_llms(request: Request) -> dict[str, LLM]:
     return get_services(request).llms
+
+
+def get_reranker(request: Request) -> Reranker | None:
+    return get_services(request).reranker
+
+
+def require_reranker(reranker: Reranker | None) -> Reranker:
+    """The reranker a request asked for, or a 503 before any work starts."""
+    if reranker is None:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "no reranker is configured")
+    return reranker
 
 
 def get_clone() -> Clone:

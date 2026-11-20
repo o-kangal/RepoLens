@@ -17,12 +17,13 @@ from repolens.generation.prompt import NOT_FOUND_ANSWER, SYSTEM_PROMPT, build_me
 from repolens.ingest.chunk import Strategy
 from repolens.providers.embeddings import Embedder, EmbeddingError
 from repolens.providers.llm import LLM, Completion, LLMError, StopReason, TextDelta, TokenUsage
+from repolens.retrieval.rerank import Reranker, RerankError
+from repolens.retrieval.search import SearchMode, search
 from repolens.retrieval.types import (
     EmbeddingModelMismatchError,
     RepositoryNotFoundError,
     RepositoryNotReadyError,
 )
-from repolens.retrieval.vector import vector_search
 
 RETRIEVE_K = 20
 ANSWER_MAX_TOKENS = 16_000
@@ -36,6 +37,7 @@ class ErrorCode(StrEnum):
     REPOSITORY_NOT_READY = "repository_not_ready"
     EMBEDDING_MODEL_MISMATCH = "embedding_model_mismatch"
     EMBEDDING_FAILED = "embedding_failed"
+    RERANK_FAILED = "rerank_failed"
     LLM_FAILED = "llm_failed"
     INTERNAL = "internal"
 
@@ -75,6 +77,7 @@ _KNOWN_ERRORS: tuple[tuple[type[Exception], ErrorCode], ...] = (
     (RepositoryNotReadyError, ErrorCode.REPOSITORY_NOT_READY),
     (EmbeddingModelMismatchError, ErrorCode.EMBEDDING_MODEL_MISMATCH),
     (EmbeddingError, ErrorCode.EMBEDDING_FAILED),
+    (RerankError, ErrorCode.RERANK_FAILED),
     (LLMError, ErrorCode.LLM_FAILED),
 )
 
@@ -84,22 +87,27 @@ async def answer_question(
     *,
     repo_id: uuid.UUID,
     strategy: Strategy,
+    mode: SearchMode,
     session_factory: sessionmaker[Session],
     embedder: Embedder,
+    reranker: Reranker | None,
     llm: LLM,
 ) -> AsyncIterator[QueryEvent]:
     """Yield the sources, the answer's text deltas, then one ``DoneEvent``, or an ``ErrorEvent``.
 
-    With no sources retrieved, the answer is the not-found reply and the LLM is not called.
+    Retrieval runs in the given ``mode``, reranked when a ``reranker`` is given. With no sources
+    retrieved, the answer is the not-found reply and the LLM is not called.
     """
     try:
-        chunks = await vector_search(
+        chunks = await search(
             session_factory,
             embedder,
             repo_id=repo_id,
             strategy=strategy,
             query=question,
+            mode=mode,
             k=RETRIEVE_K,
+            reranker=reranker,
         )
         sources = build_context(chunks)
         yield SourcesEvent(sources)
