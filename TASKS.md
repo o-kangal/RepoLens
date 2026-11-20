@@ -487,7 +487,7 @@ uv --directory backend run python ../evals/dataset.py ../evals/datasets/<typescr
 ---
 
 ### Task 23: Golden Dataset, Python Target
-- **Status:** ⏳ Pending
+- **Status:** ✅ Completed (2026-11-20)
 - **Type:** Data
 - **Human Step:** The owner approves the dataset after the review process in `evals/datasets/README.md`: independent agent reviews of every item until two consecutive rounds raise only minor findings, with conflicting or unconfirmed findings decided by the owner.
 - **Read-Only Context Files:** `AGENTS.md`, `evals/datasets/README.md`, `docs/plans/RepoLens_Plan.md` (§9.1, §9.2)

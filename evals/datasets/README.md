@@ -97,3 +97,33 @@ of a local checkout filled in:
    point in the code; all held and were corrected.
 5. The owner did not review the items one by one. They chose this review process and approved
    the result.
+
+## `starlette.jsonl`
+
+- **Repository:** [`Kludex/starlette`](https://github.com/Kludex/starlette), release `1.10.0`,
+  commit `8aa828ceaff764a2e57932fb42fdf105a47c4c83` (BSD-3-Clause license).
+- **Items:** 50: 14 locate, 12 explain, 8 multi-hop, 8 docs, 8 negative.
+
+### How it was created
+
+1. Claude (Opus 5.5, in Claude Code) read the source files under `starlette/` and the
+   documentation pages under `docs/` at the pinned commit, and drafted each question and
+   reference answer from the code it had read.
+2. The line ranges of code sources come from RepoLens's own AST chunker, run over the files with
+   splitting and merging turned off. Documentation ranges are heading sections.
+3. For each negative question, the topic was searched for in `starlette/`, `docs/` and `tests/`.
+   Topics that the documentation answers with a third-party library (GraphQL, databases, rate
+   limiting, OAuth) were left out.
+4. The draft went through the review process above, in three rounds:
+   - Round 1 found two major problems. A negative question about automatic reloading is
+     answered by `README.md` and `docs/index.md` ("run uvicorn with `--reload`"): the earlier
+     search had spelled the term without its hyphen and had not covered `README.md`. It was
+     replaced by a question about feature flags, and all negative topics were searched for
+     again, `README.md` included. One answer stated wrongly when CORSMiddleware sends no
+     explicit origin; one reviewer rated it major, the other minor, and the code confirmed the
+     error. The round also raised 8 minor points.
+   - Round 2 raised 2 minor points and round 3 raised 4, all of them missing nuance, missing
+     source ranges or a question too close to another one.
+   - Claude checked every point in the code; all held and were corrected.
+5. The owner did not review the items one by one. They chose this review process and approved
+   the result.
