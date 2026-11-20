@@ -1,0 +1,10 @@
+# Tool settings only: the evals run in the backend's environment, for example
+# `uv --directory backend run pytest ../evals/tests`. pytest finds this file from those paths,
+# and the modules here import each other by name, as they do when run as scripts.
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+extend = "../backend/pyproject.toml"

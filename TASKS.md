@@ -450,7 +450,7 @@ uv --directory backend run pytest tests/retrieval/test_rerank.py
 ---
 
 ### Task 21: Retrieval Metrics and Dataset Schema
-- **Status:** ⏳ Pending
+- **Status:** ✅ Completed (2026-11-20)
 - **Type:** Feature
 - **Human Step:** None
 - **Read-Only Context Files:** `AGENTS.md`, `docs/plans/RepoLens_Plan.md` (§9.2, §9.3)

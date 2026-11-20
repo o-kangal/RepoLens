@@ -39,8 +39,9 @@ exclude-newer = "1 day"
 
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib"
-pythonpath = ["."]
-testpaths = ["tests"]
+# The evals live beside the backend and import their modules by name, as their scripts do.
+pythonpath = [".", "../evals"]
+testpaths = ["tests", "../evals/tests"]
 
 [tool.ruff]
 line-length = 100
