@@ -16,7 +16,7 @@
 ## Open Decisions (resolve before the task named in each item)
 1. **Embedding model and vector size (before Task 4):** ✅ Resolved (2026-11-05): Voyage `voyage-code-3` with `VECTOR(1024)`, replacing the 1536 in the §5 schema. Revised (2026-11-12, Task 7): `voyage-code-4`, since Voyage now lists `voyage-code-3` under older models; it keeps the 1024 default dimension, so the schema is unchanged. The model is a setting, and vectors from different models are never mixed in one index. The §15 E6 stretch goal can compare `text-embedding-3-small` in the same column through its `dimensions=1024` option, once stored vectors record which model produced them.
 2. **Reranker (before Task 20):** ✅ Resolved (2026-11-20): Voyage `rerank-3`, on the existing Voyage key, with the model as a setting (`rerank-3-lite` is the cheaper option). It needs no new provider or dependency, and its first 200 million tokens are free. Cohere's trial key allows 1,000 calls a month at 10 per minute and no commercial use, too tight for eval runs. A local `bge-reranker` would add PyTorch-sized dependencies to the backend image. A failed rerank is an error rather than a silent fallback to the fused order, so an experiment that asks for reranking never measures unreranked results.
-3. **Eval target repositories (before Task 22):** which public TypeScript repository and which public Python repository, at which pinned commit SHAs?
+3. **Eval target repositories (before Task 22):** ✅ Resolved (2026-11-20): TypeScript `h3js/h3` at release `v2.0.8`, commit `f0e17808ac2439b6434bb10609a961067f4d555b` (MIT; an HTTP framework with 90 source files and 36 documentation pages). Python `Kludex/starlette` at release `1.10.0`, commit `8aa828ceaff764a2e57932fb42fdf105a47c4c83` (BSD-3-Clause; the ASGI framework under FastAPI, with 37 source files and 33 Markdown files). Both are mid-sized, well inside the ingestion limits, and pinned to a release commit. Their documentation gives the docs questions real sources.
 4. **Tracing (before Task 30):** self-hosted Langfuse or OpenTelemetry?
 5. **Demo hosting (before Task 38):** ✅ Resolved (2026-11-12): a static, read-only demo at `repolens.okangal.com`, served by Cloudflare Pages, where `okangal.com` already runs. It has no backend and no API keys, so it has no hosting or usage cost; it replays runs recorded locally against a pinned public repository, chosen at Task 35. The app runs locally with the user's own keys, and the owner pays only for one-off local runs (evals, demo data).
 6. **`tokcost` manifest support (before Task 39):** build it once the analyzer exists, or drop it from v1?
@@ -468,17 +468,17 @@ uv --directory backend run pytest ../evals/tests/test_metrics.py ../evals/tests/
 ---
 
 ### Task 22: Golden Dataset, TypeScript Target
-- **Status:** ⏳ Pending
+- **Status:** ✅ Completed (2026-11-20)
 - **Type:** Data
-- **Human Step:** The owner verifies every dataset item.
+- **Human Step:** The owner approves the dataset after the review process in `evals/datasets/README.md`: independent agent reviews of every item until two consecutive rounds raise only minor findings, with conflicting or unconfirmed findings decided by the owner.
 - **Read-Only Context Files:** `AGENTS.md`, `docs/plans/RepoLens_Plan.md` (§9.1, §9.2)
 - **Target Files (Create/Modify):**
   - `evals/datasets/<typescript-repo>.jsonl`, `evals/datasets/README.md`
 - **Step-by-Step Instructions:**
   1. Pin the repository and commit SHA from Open Decision 3.
   2. Draft about 50 questions from the real code, covering all five question types.
-  3. **Human step:** the project owner verifies every item. Record in `evals/datasets/README.md` how the dataset was created, and only what really happened.
-  4. Mark the task complete only after the owner confirms verification.
+  3. **Human step:** run the review process in `evals/datasets/README.md` and bring conflicting or unconfirmed findings to the owner. Record in `evals/datasets/README.md` how the dataset was created and reviewed, and only what really happened.
+  4. Mark the task complete only after the owner approves the reviewed dataset.
 - **Verification:**
 ```bash
 uv --directory backend run python ../evals/dataset.py ../evals/datasets/<typescript-repo>.jsonl
@@ -489,15 +489,15 @@ uv --directory backend run python ../evals/dataset.py ../evals/datasets/<typescr
 ### Task 23: Golden Dataset, Python Target
 - **Status:** ⏳ Pending
 - **Type:** Data
-- **Human Step:** The owner verifies every dataset item.
+- **Human Step:** The owner approves the dataset after the review process in `evals/datasets/README.md`: independent agent reviews of every item until two consecutive rounds raise only minor findings, with conflicting or unconfirmed findings decided by the owner.
 - **Read-Only Context Files:** `AGENTS.md`, `evals/datasets/README.md`, `docs/plans/RepoLens_Plan.md` (§9.1, §9.2)
 - **Target Files (Create/Modify):**
   - `evals/datasets/<python-repo>.jsonl`, `evals/datasets/README.md`
 - **Step-by-Step Instructions:**
   1. Pin the repository and commit SHA from Open Decision 3.
   2. Draft about 50 questions from the real code, covering all five question types.
-  3. **Human step:** the project owner verifies every item.
-  4. Mark the task complete only after the owner confirms verification.
+  3. **Human step:** run the review process in `evals/datasets/README.md` and bring conflicting or unconfirmed findings to the owner.
+  4. Mark the task complete only after the owner approves the reviewed dataset.
 - **Verification:**
 ```bash
 uv --directory backend run python ../evals/dataset.py ../evals/datasets/<python-repo>.jsonl
