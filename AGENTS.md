@@ -43,8 +43,8 @@ Always run these commands from the repository root:
 - **Tests:** `pnpm run test`
 - **Production Build:** `pnpm run build`
 - **Python Install:** `uv --directory backend sync --locked`
-- **Python Lint:** `uv --directory backend run ruff check .` and `uv --directory backend run ruff format --check .`
-- **Python Type Check:** `uv --directory backend run mypy repolens`
+- **Python Lint:** `uv --directory backend run ruff check . ../evals` and `uv --directory backend run ruff format --check . ../evals`
+- **Python Type Check:** `uv --directory backend run mypy repolens ../evals`
 - **Python Tests:** `uv --directory backend run pytest`
 - **Python Dependency Audit:** `uv --directory backend run pip-audit`
 - **Database:** `docker compose up -d --wait db`
